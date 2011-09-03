@@ -49,7 +49,7 @@
       shader = context.createShader(context.FRAGMENT_SHADER);
     } else {
       alert('Shader script must have type "x-shader/x-fragment" or' +
-          ' "x-shader/x-vertex"');
+            ' "x-shader/x-vertex"');
       return null;
     }
     context.shaderSource(shader, src);
@@ -95,6 +95,8 @@
    *                       init: A one-time initialization function.
    *                       draw: A draw function that takes context as a param.
    *                       framerate: The framerate to call draw.
+   *                                  If not set or set to 0, scene is rendered
+   *                                  once.
    *                       
    * @return {WebGLRenderingContext?}  The context.
    */
@@ -125,6 +127,17 @@
     context.pos = pos;
 
     context.enableVertexAttribArray(pos);
+
+    if (opts.init) {
+      opts.init(context);
+    }
+    if (opts.draw) {
+      if (opts.framerate && opts.framerate > 0) {
+        setTimeout(function() { opts.draw(context); }, 1000.0/opts.framerate);
+      } else {
+        opts.draw(context);
+      }
+    }
     return context;
   };
 })(jQuery);
