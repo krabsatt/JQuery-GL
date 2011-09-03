@@ -5,6 +5,66 @@
 // freeing the developer to focus on actual content.
 
 (function($) {
+
+  /**
+   * Manages binding and associating buffers.
+   * @constructor
+   */
+  function BufferManager(gl) {
+    this._gl = gl;
+    // TODO: Make this an associative container and add ability to
+    // selectively bind.
+    this._buffers = [];
+  }
+
+  /**
+   * Binds all buffers we know about.
+   */
+  BufferManager.prototype.bindAll = function() {
+    for (i = 0; i < this._buffers.length; ++i) {
+      attr = this._buffers[i].attr;
+      buffer = this._buffers[i].buffer;
+      l = this._buffers[i].l;
+
+      var gl = this._gl;
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+      gl.vertexAttribPointer(attr, l, gl.FLOAT, false, 0, 0);
+    }
+  };
+
+  /**
+   * Set a binding for us to track.
+   * Along the way, we create a gl buffer and attribute location,
+   * associating the two for future binding.
+   * @param {Array} array
+   * @param {String} attributeName
+   * @param {Number} l 
+   */
+  BufferManager.prototype.setBinding = function(array, attributeName, l) {
+    var gl = this._gl;
+    if (!l){
+      l = 3;
+    }
+
+    buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(array), gl.STATIC_DRAW);
+
+    attribute = gl.getAttribLocation(gl.x.prog, attributeName);
+    if (attribute == -1) {
+      alert('Unable to find attribute name ' + attributeName + ' in shaders.');
+    }
+    gl.enableVertexAttribArray(attribute);
+
+    this._buffers.push({
+      attr: attribute,
+      buffer: buffer,
+      l: l
+    });
+  };
+
+
+
   /**
    * Create a new gl context in the given canvas element.
    *
@@ -60,7 +120,8 @@
       return null;
     }
     return shader;
-  }
+  };
+
 
   /**
    * Creates a shader program, attaches vs and fs, then links it.
@@ -81,7 +142,27 @@
             context.getProgramInfoLog(prog));
     }
     return prog;
+  };
+
+
+  /**
+   * Mix in our extension properties.
+   *
+   * @param {WebGLRenderContext} gl  The context to add properties to.
+   * @param {WebGLProgram} prog  The shader program bound to gl.
+   */
+  var mixIn = function(gl, prog) {
+    gl.x = {
+      prog: prog,
+      buffers: new BufferManager(gl),
+      uMatrix: function(m, name) {  // TODO Defining this here feels dirty.
+        var loc = gl.getUniformLocation(gl.prog, name);
+        gl.uniformMatrix4fv(loc, false, new Float32Array(m.flatten()));
+
+      }
+    }
   }
+
 
   /**
    * Create and initialize a webgl rendering context.
@@ -91,7 +172,6 @@
    * @param {Object} opts  An options object.  Required members:
    *                       vsID: The id of the vertex shader script element.
    *                       fsID: The id of the fragment shader script element.
-   *                       TODO:
    *                       init: A one-time initialization function.
    *                       draw: A draw function that takes context as a param.
    *                       framerate: The framerate to call draw.
@@ -109,35 +189,23 @@
             ' vsID and fsID are required properties.');
       return null;
     }
-    var context = getContext(this[0]);
-    var vs = createShader(context, opts.vsId);
-    var fs = createShader(context, opts.fsId);
-    var prog = createShaderProgram(context, vs, fs);
-    // TODO: see below @context.pos
-    context.prog = prog;
-    context.useProgram(prog);
-
-    var positionAttributeName = opts.posAttr;
-    if (!positionAttributeName) {
-      positionAttributeName = 'aPos';  // TODO: Choose a sensible default.
-    }
-    var pos = context.getAttribLocation(prog, positionAttributeName);
-    // TODO: Wrap this as well as higher level gl* matric ops in a
-    // new object or expand this object.
-    context.pos = pos;
-
-    context.enableVertexAttribArray(pos);
+    var gl = getContext(this[0]);
+    var vs = createShader(gl, opts.vsId);
+    var fs = createShader(gl, opts.fsId);
+    var prog = createShaderProgram(gl, vs, fs);
+    gl.useProgram(prog);
+    mixIn(gl, prog);
 
     if (opts.init) {
-      opts.init(context);
+      opts.init(gl);
     }
     if (opts.draw) {
       if (opts.framerate && opts.framerate > 0) {
-        setTimeout(function() { opts.draw(context); }, 1000.0/opts.framerate);
+        setTimeout(function() { opts.draw(gl); }, 1000.0/opts.framerate);
       } else {
-        opts.draw(context);
+        opts.draw(gl);
       }
     }
-    return context;
+    return gl;
   };
 })(jQuery);
