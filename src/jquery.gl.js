@@ -78,11 +78,11 @@
   /**
    * Creates a perspective projection matrix and sets this.p.
    *
-   * @param near  The near z-plane distance.
-   * @param far  The far z-plane distance.
-   * @param width  The width of your render context.
-   * @param height  The height of your render context.
-   * @param fov  The FOV angle.
+   * @param {Number} near  The near z-plane distance.
+   * @param {Number} far  The far z-plane distance.
+   * @param {Number} width  The width of your render context.
+   * @param {Number} height  The height of your render context.
+   * @param {Number} fov  The FOV angle in degrees.
    * @return {Matrix}  The created matrix.
    */
   MatrixManager.prototype.perspective = function(
