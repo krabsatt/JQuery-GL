@@ -75,7 +75,18 @@
     this.p = Matrix.I(4);
   }
 
-  MatrixManager.prototype.perspective = function(near, far, width, height, fov) {
+  /**
+   * Creates a perspective projection matrix and sets this.p.
+   *
+   * @param near  The near z-plane distance.
+   * @param far  The far z-plane distance.
+   * @param width  The width of your render context.
+   * @param height  The height of your render context.
+   * @param fov  The FOV angle.
+   * @return {Matrix}  The created matrix.
+   */
+  MatrixManager.prototype.perspective = function(
+      near, far, width, height, fov) {
     var aspect = width * 1.0 / height;
     // Adjust width, height from image space to projection space.
     height = 2.0 * near * Math.tan(fov * Math.PI / 360.0);
@@ -92,20 +103,41 @@
     return this.p;
   };
 
+  // TODO
   MatrixManager.prototype.push = function() {}
-  MatrixManager.prototype.pop = function() {  }
+  MatrixManager.prototype.pop = function() {}
+
+  /**
+   * Creates an identity matrix.
+   *
+   * @return {Matrix}  The created matrix.
+   */
   MatrixManager.prototype.identity = function() {
-    this.m = Matrix.I(4)
+    this.m = Matrix.I(4);
+    return this.m;
   }
+
+  /**
+   * Creates an identity matrix.
+   *
+   * @return {Matrix}  The created matrix.
+   */
   MatrixManager.prototype.i = function() {
-    this.identity();
+    return this.identity();
   }
+
+  /**
+   * Creates and applies a translation matrix.
+   *
+   * @return {Matrix}  The created matrix.
+   */
   MatrixManager.prototype.translate = function(v) {
     var t = Matrix.I(4);
     for (var i = 0; i < v.length; ++i) {
       t.elements[i][3] = v[i];
     }
     this.m = this.m.x(t);
+    return t;
   }
 
 
@@ -315,7 +347,15 @@
     return this.currentMaterial;
   };
 
+  /**
+   * Initializes depth function and value.
+   *
+   * @param {Number} depth  Default depth (default 1.0)
+   */
   GLExtension.prototype.initDepth = function(depth) {
+    if (!depth) {
+      depth = 1.0;
+    }
     var gl = this._gl;
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clearDepth(depth);
