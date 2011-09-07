@@ -75,6 +75,23 @@
     this.p = Matrix.I(4);
   }
 
+  MatrixManager.prototype.perspective = function(near, far, width, height, fov) {
+    var aspect = width * 1.0 / height;
+    // Adjust width, height from image space to projection space.
+    height = 2.0 * near * Math.tan(fov * Math.PI / 360.0);
+    width = aspect * height;
+    var a = 2.0 * near / width;
+    var b = 2.0 * near / height;
+    var c = -(far + near) / (far - near);
+    var d = -2.0 * (far * near) / (far - near);
+    this.p = $M(
+        [[a, 0, 0, 0],
+         [0, b, 0, 0],
+         [0, 0, c, d],
+         [0, 0, -1, 0]]);
+    return this.p;
+  };
+
   MatrixManager.prototype.push = function() {}
   MatrixManager.prototype.pop = function() {  }
   MatrixManager.prototype.identity = function() {
