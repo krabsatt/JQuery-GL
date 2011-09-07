@@ -11,6 +11,12 @@
    * @constructor
    */
   function Material(prog, gl) {
+    if (!prog) {
+      alert('Tried to create a material with undefined shader program.');
+    }
+    if (!gl) {
+      alert('Tried to create a material with undefined context.');
+    }
     this._gl = gl;
     this.prog = prog;
     this._uniforms = {};
@@ -42,7 +48,7 @@
         matrix = gl.m.p;
       }
       var uniform = gl.getUniformLocation(this.prog, name);
-      if (uniform == -1) {
+      if (!uniform) {
         alert('Unable to find uniform name ' + name + ' in shaders.');
       }
 
@@ -50,7 +56,7 @@
       var len = 4;
       for (var i = 0; i < len; ++i) {
         for (var j = 0; j < len; ++j) {
-          flat.push(matrix.e(i, j));
+          flat.push(matrix.elements[j][i]);
         }
       }
 
@@ -64,8 +70,8 @@
    * Requires Sylvester
    */
   function MatrixManager() {  // No touchie gl
-    this._mStack = [Matrix.I(4)];
-    this.m = this._mStack[0];
+    this._stack = [];
+    this.m = Matrix.I(4);
     this.p = Matrix.I(4);
   }
 
@@ -79,10 +85,10 @@
   }
   MatrixManager.prototype.translate = function(v) {
     var t = Matrix.I(4);
-    for (var i = 0; i < 4; ++i) {
+    for (var i = 0; i < v.length; ++i) {
       t.elements[i][3] = v[i];
     }
-    this.m.x(t);
+    this.m = this.m.x(t);
   }
 
 
@@ -90,11 +96,20 @@
    * Abstraction of a set of buffers using a single shader program.
    * @constructor
    */
-  function Model(gl, material) {
+  function Model(gl, material, type, length) {
+    if (!gl) {
+      alert('Tried to create a model with undefined context.');
+    }
+    if (!type) {
+      alert('Tried to create a model with undefined geometry type.');
+    }
+    if (!length) {
+      alert('Tried to create a model with undefined length.');
+    }
+    this._vert_length = length;
+    this._type = type;
     this._buffers = [];
     this._gl = gl;
-    // TODO: Get this from elsewhere?
-    this._vert_length = 0;
     this._material = material
     if (!material) {
       this._material = gl.x.currentMaterial;
@@ -125,25 +140,25 @@
    * associating the two.
    * @param {Array} array
    * @param {String} attributeName
-   * @param {Number} l 
+   * @param {Number?} l The length of each element in array (eg. 3 for
+   *                    verts in 3 dimensions)
    */
   Model.prototype.addAttribute = function(array, attributeName, l) {
     var gl = this._gl;
     if (!l){
       l = 3;
     }
-    this._vert_length = array.length/l;
 
-    buffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(array), gl.STATIC_DRAW);
-
-    attribute = gl.getAttribLocation(this._material.prog, attributeName);
+    gl.useProgram(this._material.prog);
+    var attribute = gl.getAttribLocation(this._material.prog, attributeName);
     if (attribute == -1) {
       alert('Unable to find attribute name ' + attributeName + ' in shaders.');
     }
     gl.enableVertexAttribArray(attribute);
 
+    var buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(array), gl.STATIC_DRAW);
     this._buffers.push({
       attr: attribute,
       buffer: buffer,
@@ -159,7 +174,7 @@
     gl.useProgram(this._material.prog);
     this._setAttributes();
     this._material.setUniforms();
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, this._vert_length);
+    gl.drawArrays(this._type, 0, this._vert_length);
   }
 
 
@@ -258,8 +273,8 @@
    * @param {Material}  material  A material to use to draw the new model.
    * @return The created material.
    */
-  GLExtension.prototype.createModel = function(material) {
-    model = new Model(this._gl, material);
+  GLExtension.prototype.createModel = function(material, type, len) {
+    model = new Model(this._gl, material, type, len);
     this._models.push(model);
     return model
   }
@@ -282,6 +297,14 @@
     this.currentMaterial = new Material(prog, gl);
     return this.currentMaterial;
   };
+
+  GLExtension.prototype.initDepth = function(depth) {
+    var gl = this._gl;
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.clearDepth(depth);
+    gl.enable(gl.DEPTH_TEST);
+    gl.depthFunc(gl.LEQUAL);
+  }
 
   /**
    * Gets the first model (temporary)
@@ -321,7 +344,14 @@
     if (this.length == 0) {
       return this;
     }
-    var gl = getContext(this[0]);
+    var e = this[0];
+    var gl = null;
+    if (e._jquery_gl) {
+      gl = e._jquery_gl;
+    } else {
+      gl = getContext(this[0]);
+      e._jquery_gl = gl;
+    }
     mixIn(gl);
 
     if (opts.init) {
