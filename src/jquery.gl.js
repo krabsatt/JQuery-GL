@@ -129,6 +129,7 @@
   /**
    * Creates and applies a translation matrix.
    *
+   * @param {Array(3)} v  The translation vector.
    * @return {Matrix}  The created matrix.
    */
   MatrixManager.prototype.translate = function(v) {
@@ -140,6 +141,23 @@
     return t;
   }
 
+  /**
+   * Creates and applies a rotation matrix.
+   *
+   * @param {Number} theta  The angle to rotate in degrees.
+   * @param {Array(3)} v  The axis vector to rotate around.
+   * @return {Matrix}  The created matrix.
+   */
+  MatrixManager.prototype.rotate = function(theta, v) {
+    theta = theta * Math.PI / 180.0;
+    var r = Matrix.Rotation(theta, $V(v));
+    for (var i = 0; i < 3; ++i) {
+      r.elements[i].push(0);
+    }
+    r.elements.push([0, 0, 0, 1]);
+    this.m = this.m.x(r);
+    return r;
+  }
 
   /**
    * Abstraction of a set of buffers using a single shader program.
@@ -163,9 +181,10 @@
     if (!material) {
       this._material = gl.x.currentMaterial;
     }
-    if (!material) {
+    if (! this._material) {
       alert('Must create a material before you can create a Model.');
     }
+    this._elementArray = null;
   }
 
   /**
@@ -180,6 +199,9 @@
       var gl = this._gl;
       gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
       gl.vertexAttribPointer(attr, l, gl.FLOAT, false, 0, 0);
+    }
+    if (this._elementArray) {
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this._elementArray);
     }
   };
 
@@ -198,7 +220,6 @@
       l = 3;
     }
 
-    gl.useProgram(this._material.prog);
     var attribute = gl.getAttribLocation(this._material.prog, attributeName);
     if (attribute == -1) {
       alert('Unable to find attribute name ' + attributeName + ' in shaders.');
@@ -216,6 +237,20 @@
   };
 
   /**
+   * Sets the element index array buffer.
+   *
+   * @raram {Array} An array of ints representing the element indices.
+   */
+  Model.prototype.addElementArray = function(elements) {
+    var gl = this._gl;
+    buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,
+        new Uint16Array(elements), gl.STATIC_DRAW);
+    this._elementArray = buffer;
+  }
+
+  /**
    * Draws the model.
    */
   Model.prototype.draw = function() {
@@ -223,7 +258,11 @@
     gl.useProgram(this._material.prog);
     this._setAttributes();
     this._material.setUniforms();
-    gl.drawArrays(this._type, 0, this._vert_length);
+    if (this._elementArray) {
+      gl.drawElements(this._type, this._vert_length, gl.UNSIGNED_SHORT, 0);
+    } else {
+      gl.drawArrays(this._type, 0, this._vert_length);
+    }
   }
 
 
@@ -299,9 +338,7 @@
     gl.attachShader(prog, fs);
     gl.linkProgram(prog);
     if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
-
-      alert('Shader program link failed: ' +
-            gl.getProgramInfoLog(prog));
+      alert('Shader program link failed: ' + gl.getProgramInfoLog(prog));
     }
     return prog;
   };
@@ -366,7 +403,10 @@
   /**
    * Gets the first model (temporary)
    */
-  GLExtension.prototype.models = function() {
+  GLExtension.prototype.models = function(selector) {
+    if (typeof(selector) == 'number') {
+      return this._models[selector];
+    }
     // TODO Add iteration
     return this._models[0];
   };
