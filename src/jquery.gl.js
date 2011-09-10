@@ -108,6 +108,16 @@
   MatrixManager.prototype.pop = function() {}
 
   /**
+   * Multiplies the matrix with current state matrix in transformation order.
+   *
+   * @return {Matrix}  The result of m * this.m.
+   */
+  MatrixManager.prototype.apply = function(m) {
+    this.m = m.x(this.m);
+    return this.m;
+  }
+
+  /**
    * Creates an identity matrix.
    *
    * @return {Matrix}  The created matrix.
@@ -137,12 +147,14 @@
     for (var i = 0; i < v.length; ++i) {
       t.elements[i][3] = v[i];
     }
-    this.m = this.m.x(t);
+    this.apply(t);
     return t;
   }
 
   /**
    * Creates and applies a rotation matrix.
+   *
+   * This is a "right hand rule" rotation.
    *
    * @param {Number} theta  The angle to rotate in degrees.
    * @param {Array(3)} v  The axis vector to rotate around.
@@ -150,12 +162,20 @@
    */
   MatrixManager.prototype.rotate = function(theta, v) {
     theta = theta * Math.PI / 180.0;
-    var r = Matrix.Rotation(theta, $V(v));
-    for (var i = 0; i < 3; ++i) {
-      r.elements[i].push(0);
-    }
-    r.elements.push([0, 0, 0, 1]);
-    this.m = this.m.x(r);
+    v = $V(v).toUnitVector();
+    var x = v.elements[0];
+    var y = v.elements[1];
+    var z = v.elements[2];
+    var c = Math.cos(theta);
+    var s = Math.sin(theta);
+    var t = 1 - c;
+    var r = $M([
+        [t*x*x+c,   t*x*y-s*z, t*x*z+s*y, 0],
+        [t*x*y+s*z, t*y*y+c,   t*y*z-s*x, 0],
+        [t*x*z-s*y, t*y*z+s*x, t*z*z+c,   0],
+        [0,         0,         0,         1]]);
+
+    this.apply(r);
     return r;
   }
 
@@ -199,6 +219,7 @@
       var gl = this._gl;
       gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
       gl.vertexAttribPointer(attr, l, gl.FLOAT, false, 0, 0);
+      gl.enableVertexAttribArray(attr);
     }
     if (this._elementArray) {
       gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this._elementArray);
@@ -224,7 +245,6 @@
     if (attribute == -1) {
       alert('Unable to find attribute name ' + attributeName + ' in shaders.');
     }
-    gl.enableVertexAttribArray(attribute);
 
     var buffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
@@ -340,6 +360,8 @@
     if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
       alert('Shader program link failed: ' + gl.getProgramInfoLog(prog));
     }
+    gl.deleteShader(vs);
+    gl.deleteShader(fs);
     return prog;
   };
 
