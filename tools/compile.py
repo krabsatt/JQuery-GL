@@ -5,6 +5,7 @@
 #   $ python compile.py
 
 import httplib
+import os
 import sys
 import urllib
 
@@ -23,13 +24,13 @@ def get(output, js):
   conn.close
   return data
 
-
-srcs = ["src/jquery.gl.js", "src/sylvester.src.js"]
-raw_js = "\n\n".join([open(f).read() for f in srcs])
+SRC = "../src"
+srcs = ["jquery.gl.js", "sylvester.src.js"]
+raw_js = "\n\n".join([open(os.path.join(SRC,f)).read() for f in srcs])
 
 compiled = get("compiled_code", raw_js).strip();
 if not compiled:
   print get("errors", raw_js)
 else:
-  open("src/jquery.gl.min.js", "w").write(compiled)
+  open(os.path.join(SRC, "jquery.gl.min.js"), "w").write(compiled)
   print "All is well with the world.  COMPILE SUCCEEDED."
