@@ -23,7 +23,8 @@
     this._textures = {};
     this.DefaultMatrix = {
       P: 0,
-      M: 1
+      M: 1,
+      C: 2
     }
   }
 
@@ -86,6 +87,8 @@
         matrix = gl.m.m;
       } else if (matrix == this.DefaultMatrix.P) {
         matrix = gl.m.p;
+      } else if (matrix == this.DefaultMatrix.C) {
+        matrix = gl.m.c;
       }
       var uniform = gl.getUniformLocation(this.prog, name);
       if (!uniform) {
@@ -113,10 +116,36 @@
     this._stack = [];
     this.m = Matrix.I(4);
     this.p = Matrix.I(4);
+    this.c = Matrix.I(4);
+  }
+
+  /**
+   * Creates a look-at transformation matrix and sets this.c.
+   *
+   * To use this, ensure that you are setting a uniform to DefaultMatrix.C
+   * TODO: Create an abstract camera object.
+   *
+   * @return {Matrix}  The created matrix.
+   */
+  MatrixManager.prototype.lookAt = function(eye, focus, up) {
+    var eye = $V(eye);
+    var up = $V(up).toUnitVector();
+    var f = $V($V(focus).subtract(eye)).toUnitVector();
+    var s = f.cross(up);
+    var u = s.cross(f);
+    var m=$M(
+        [[s.elements[0], s.elements[1], s.elements[2],0],
+         [u.elements[0],u.elements[1],u.elements[2],0],
+         [-f.elements[0],-f.elements[1],-f.elements[2],0],
+         [0, 0, 0, 1]]);
+    var t = createTranslation(eye.x(-1));
+    this.c = m.x(t);
   }
 
   /**
    * Creates a perspective projection matrix and sets this.p.
+   *
+   * To use this, ensure that you are setting a uniform to DefaultMatrix.P
    *
    * @param {Number} near  The near z-plane distance.
    * @param {Number} far  The far z-plane distance.
@@ -180,6 +209,18 @@
     return this.identity();
   }
 
+  var createTranslation = function(v) {
+    var t = Matrix.I(4);
+    // If a Vector is passed
+    if (v.elements) {
+      v = v.elements;
+    }
+    for (var i = 0; i < v.length; ++i) {
+      t.elements[i][3] = v[i];
+    }
+    return t;
+  }
+
   /**
    * Creates and applies a translation matrix.
    *
@@ -187,10 +228,7 @@
    * @return {Matrix}  The created matrix.
    */
   MatrixManager.prototype.translate = function(v) {
-    var t = Matrix.I(4);
-    for (var i = 0; i < v.length; ++i) {
-      t.elements[i][3] = v[i];
-    }
+    var t = createTranslation(v);
     this.apply(t);
     return t;
   }

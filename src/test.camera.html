@@ -1,6 +1,7 @@
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
-<script src="jquery.gl.min.js"></script>
 
+<script src="jquery.gl.js"></script>
+<script src="sylvester.src.js"></script>
 <script id="fs" type="x-shader/x-fragment">
   void main(void) {
     gl_FragColor = vec4(1.0, 0.0, 1.0, 1.0);
@@ -10,12 +11,22 @@
   attribute vec3 aPos;
   uniform mat4 uM;
   uniform mat4 uP;
+  uniform mat4 uC;
   void main(void) {
-    gl_Position = uP * uM * vec4(aPos, 1.0);
+    gl_Position = uP * uC * uM * vec4(aPos, 1.0);
   }
 </script>
 
-<canvas width=500 height=500 id="c"></canvas>
+<canvas width=300 height=300 id="c" style="float:left"></canvas>
+<input id=x value="0"></input>
+<input id=y value="0"></input>
+<input id=z value="6"></input> (position)<br>
+<input id=fx value="0"></input>
+<input id=fy value="0"></input>
+<input id=fz value="0"></input> (target)<br>
+<input id=ux value="0"></input>
+<input id=uy value="1"></input>
+<input id=uz value="0"></input> (up)
 
 <script>
   $(document).ready(function() {
@@ -23,33 +34,35 @@
       init: init,
       draw: draw
     });
+    $('input').change(function(){draw(gl)});
   });
 
   function init(gl) {
     gl.x.initDepth(1.0);
 
-    var verts = [
-      1.0,  1.0,  0.0,
-      -1.0, 1.0,  0.0,
-      1.0,  -1.0, 0.0,
-      -1.0, -1.0, 0.0
-      ];
+    var verts = [ 1.0, 1.0, 0.0,
+                 -1.0, 1.0, 0.0,
+                  1.0,-1.0, 0.0,
+                 -1.0,-1.0, 0.0];
 
     var material = gl.x.createMaterial("vs", "fs");
     material.addUniform(material.DefaultMatrix.P, "uP");
     material.addUniform(material.DefaultMatrix.M, "uM");
+    material.addUniform(material.DefaultMatrix.C, "uC");
 
     var model = gl.x.createModel(material, gl.TRIANGLE_STRIP, 4);
     model.addAttribute(verts, "aPos");
-    model.useOrientation()
-    model.o.translate([1,1,-6]);
-    model.o.rotate(10, [0,0,1]);
   }
 
   function draw(gl) {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.m.perspective(0.1, 100, 500, 500, 45.0);
+    gl.m.lookAt([p('x'), p('y'), p('z')],
+                [p('fx'), p('fy'), p('fz')],
+                [p('ux'), p('uy'), p('uz')]);
     gl.m.i();
     gl.x.models().draw();
   }
+
+  function p(id) { return parseFloat($('#' + id).val()); }
 </script>
