@@ -143,9 +143,13 @@
     return this.p;
   };
 
-  // TODO
-  MatrixManager.prototype.push = function() {}
-  MatrixManager.prototype.pop = function() {}
+  MatrixManager.prototype.push = function() {
+    this._stack.push(this.m.dup());
+  }
+
+  MatrixManager.prototype.pop = function() {
+    this.m = this._stack.pop()
+  }
 
   /**
    * Multiplies the matrix with current state matrix in transformation order.
@@ -233,6 +237,9 @@
     if (!length) {
       alert('Tried to create a model with undefined length.');
     }
+    this.orientation = new MatrixManager();
+    this.o = this.orientation;
+    this.o.perspective = undefined;
     this._vert_length = length;
     this._type = type;
     this._buffers = [];
@@ -311,14 +318,30 @@
   }
 
   /**
+   * Tells this model to use its own orientation matrix for drawing.
+   */
+  Model.prototype.useOrientation = function() {
+    this.orientation = new MatrixManager();
+    this.o = this.orientation;
+    this.o.perspective = undefined;
+  }
+
+  /**
    * Draws the model.
    */
   Model.prototype.draw = function() {
     var gl = this._gl;
+    if (this.o) {
+      gl.m.push();
+      gl.m.apply(this.o.m);
+    }
     gl.useProgram(this._material.prog);
     this._setAttributes();
     this._material.setTextures();
     this._material.setUniforms();
+    if (this.o) {
+      gl.m.pop();
+    }
     if (this._elementArray) {
       gl.drawElements(this._type, this._vert_length, gl.UNSIGNED_SHORT, 0);
     } else {
