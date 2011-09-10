@@ -20,6 +20,7 @@
     this._gl = gl;
     this.prog = prog;
     this._uniforms = {};
+    this._textures = {};
     this.DefaultMatrix = {
       P: 0,
       M: 1
@@ -33,6 +34,45 @@
    */
   Material.prototype.addUniform = function(matrix, name) {
     this._uniforms[name] = matrix
+  };
+
+  /**
+   * Adds a texture to be used by the shader.
+   *
+   * @param {String} src  The location of the texture image.
+   * @param {String} name  The uniform name of the sampler.
+   */
+  Material.prototype.addTexture = function(src, name) {
+    gl = this._gl;
+    texture = gl.createTexture();
+    image = new Image();
+    var outerThis = this;
+    var onload = function() {
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.texImage2D(
+          gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(
+          gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
+      gl.generateMipmap(gl.TEXTURE_2D);
+      gl.bindTexture(gl.TEXTURE_2D, null);
+      outerThis._textures[name] = texture;
+    }
+    image.onload = onload;
+    image.src = src;
+  };
+
+  /**
+   * Sets texture samplers for shaders to use.
+   */
+  Material.prototype.setTextures = function() {
+    var i = 0;
+    for (name in this._textures) {
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, this._textures[name]);
+      gl.uniform1i(gl.getUniformLocation(this.prog, name), i);
+      i++;
+    }
   }
 
   /**
@@ -277,6 +317,7 @@
     var gl = this._gl;
     gl.useProgram(this._material.prog);
     this._setAttributes();
+    this._material.setTextures();
     this._material.setUniforms();
     if (this._elementArray) {
       gl.drawElements(this._type, this._vert_length, gl.UNSIGNED_SHORT, 0);
@@ -456,7 +497,7 @@
    *                       framerate: The framerate to call draw.
    *                                  If not set or set to 0, scene is rendered
    *                                  once.
-   *                       
+   *
    * @return {WebGLRenderingContext?}  The context.
    */
   $.fn.gl = function(opts) {
