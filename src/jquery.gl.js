@@ -6,19 +6,21 @@
 
 (function($) {
 
+  var INFO = {
+    version: '0.71'
+  }
+
   /**
    * A thin wrapper around a shader program.
    * @constructor
    */
-  function Material(prog, gl) {
-    if (!prog) {
-      alert('Tried to create a material with undefined shader program.');
-    }
+  function Material(gl) {
     if (!gl) {
       alert('Tried to create a material with undefined context.');
     }
     this._gl = gl;
-    this.prog = prog;
+    this.prog = gl.createProgram();
+    this._shaders = {};
     this._uniforms = {};
     this._textures = {};
     this.DefaultMatrix = {
@@ -26,12 +28,90 @@
       M: 1,
       C: 2
     }
-  }
+  };
+
+  /**
+   * Links the underlying shader program.
+   */
+  Material.prototype.link = function() {
+    var gl = this._gl;
+    var prog = this.prog;
+    gl.linkProgram(prog);
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+      alert('Shader program link failed: ' + gl.getProgramInfoLog(prog));
+    }
+  };
+
+  Material.prototype._createShader = function(e, type) {
+    var gl = this._gl;
+    var src = e.val();  // Check if input/textarea first.
+    if ('' == src) {
+      src = e.text();
+    }
+    var id = e.attr('id');
+    if (!src || src == '') {
+      alert('No source for shader with id: ' + id);
+      return null;
+    }
+    if (!type) {
+      type = getScriptType(e, gl);
+      if (!type) {
+        alert('Shader script must have type attribute set to ' +
+              ' "x-shader/x-fragment" or "x-shader/x-vertex"');
+        return null;
+      }
+    }
+
+    var shader = gl.createShader(type);
+    gl.shaderSource(shader, src);
+    gl.compileShader(shader);
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+      alert('Shader compilation failed: ' + id + ': ' +
+            gl.getShaderInfoLog(shader));
+      return null;
+    }
+    return shader;
+  };
+
+  var getScriptType = function(script, gl) {
+    var type = script.attr('type');
+    if (type == 'x-shader/x-vertex') {
+      return compileShader(gl, src, scriptId, gl.VERTEX_SHADER);
+    }  else if (type == 'x-shader/x-fragment') {
+      return compileShader(gl, src, scriptId, gl.FRAGMENT_SHADER);
+    } else {
+      return null;
+    }
+  };
+
+  /**
+   * Loads a shader for the given type from an element with given id.
+   *
+   * @param {String} id  The id of the element containing source.
+   * @param {gl.FRAGMENT_SHADER|gl.VERTEX_SHADER} type  The shader type.
+   */
+  Material.prototype.loadShader = function(id, type) {
+    var gl = this._gl;
+    var e = $('#' + id);
+    if (!type) {
+      type = getType(e);
+    }
+    var shader = this._createShader(e, type);
+    if (shader) {
+      if (this._shaders[type]) {
+        gl.detachShader(this.prog, this._shaders[type]);
+      }
+      gl.attachShader(this.prog, shader);
+      this._shaders[type] = shader;
+      // Only marks for deletion.  Deleted when it becomes unused.
+      gl.deleteShader(shader);
+    }
+  };
 
   /**
    * Add a binding between a matrix and a uniform matrix.
    *
-   * @param {Matrix|gl.m} matrix  A sylvester matrix.
+   * @param {Matrix|DefaultMatrix|Vector} matrix  A sylvester matrix.
    */
   Material.prototype.addUniform = function(matrix, name) {
     this._uniforms[name] = matrix
@@ -292,6 +372,10 @@
     this._elementArray = null;
   }
 
+  // TODO TODO TODO 
+  // Add a reloadShader() function that recompiles a shader
+  // Add a relink() function
+
   /**
    * Binds all buffers we know about.
    */
@@ -411,68 +495,13 @@
   }
 
 
-  /**
-   * Creates a shader for the given context from the script with id scriptId,
-   * @param {WebGLRenderingContext} gl  A webgl context.
-   * @param {String} scriptId  The id of the script element containing shader.
-   * @return {WebGLShader?} An initialized (but not attached) shader.
-   */
-  var createShader = function(gl, scriptId) {
-    var script = $('#' + scriptId);
-    var src = script.text();
-    if (!src || src == '') {
-      alert('Unable to find source for shader: ' + scriptId);
-      return null;
-    }
-    var type = script.attr('type');
-    var shader = null;
-    if (type == 'x-shader/x-vertex') {
-      shader = gl.createShader(gl.VERTEX_SHADER);
-    }  else if (type == 'x-shader/x-fragment') {
-      shader = gl.createShader(gl.FRAGMENT_SHADER);
-    } else {
-      alert('Shader script must have type "x-shader/x-fragment" or' +
-            ' "x-shader/x-vertex"');
-      return null;
-    }
-    gl.shaderSource(shader, src);
-    gl.compileShader(shader);
-    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-      alert('Shader compilation failed: ' + scriptId + ': ' +
-            gl.getShaderInfoLog(shader));
-      return null;
-    }
-    return shader;
-  };
-
-
-  /**
-   * Creates a shader program, attaches vs and fs, then links it.
-   *
-   * @param gl {WebGLRenderingContext} context  A webgl context.
-   * @param vs {WebGLShader} vs  A vertex shader.
-   * @param vs {WebGLShader} vs  A vertex shader.
-   * @return {WebGLProgram}  The linked shader program.
-   */
-  var createShaderProgram = function(gl, vs, fs) {
-    prog = gl.createProgram();
-    gl.attachShader(prog, vs);
-    gl.attachShader(prog, fs);
-    gl.linkProgram(prog);
-    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
-      alert('Shader program link failed: ' + gl.getProgramInfoLog(prog));
-    }
-    gl.deleteShader(vs);
-    gl.deleteShader(fs);
-    return prog;
-  };
-
 
   /**
    * Defines some shortcuts we will add to the context.
    * @constructor
    */
   function GLExtension(gl) {
+    this.info = INFO;
     this._models = [];
     this._gl = gl;
   }
@@ -498,14 +527,12 @@
    */
   GLExtension.prototype.createMaterial = function(vsId, fsId) {
     var gl = this._gl;
-    var vs = createShader(gl, vsId);
-    var fs = createShader(gl, fsId);
-    var prog = createShaderProgram(gl, vs, fs);
-    if (!prog) {
-      alert('Failed to create program: ' + vs + ', ' + fs);
-    }
-    this.currentMaterial = new Material(prog, gl);
-    return this.currentMaterial;
+    this.currentMaterial = new Material(gl);
+    material = this.currentMaterial;
+    material.loadShader(vsId,  gl.VERTEX_SHADER);
+    material.loadShader(fsId,  gl.FRAGMENT_SHADER);
+    material.link();
+    return material;
   };
 
   /**

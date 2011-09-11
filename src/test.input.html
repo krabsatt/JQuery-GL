@@ -1,0 +1,199 @@
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
+<script src="jquery.gl.js"></script>
+<script src="sylvester.src.js"></script>
+<style>
+  textarea {
+    width: 300px;
+    height: 400px;
+    float: left;
+  }
+</style> 
+<textarea  width=80 height=80 id="fs"> 
+// Fragment shader code
+varying highp vec4 vColor;
+varying highp vec3 vNorm;
+varying highp vec3 vPos;
+
+void main(void) {
+  highp vec4 amb = vec4(0.3,0.3,0.3,1);
+  highp vec3 l = vec3(-1.5, 1.5, 1.5);
+  highp float mult = dot(normalize(l - vPos), vNorm);
+  highp vec4 dlight = highp vec4(highp vec3(1,1,1) * mult, 1);
+
+  gl_FragColor = vColor * (amb + dlight);
+}
+</textarea> 
+    
+<textarea width=80 height=80 type="textbox" id="vs"> 
+// Vertex shader code
+attribute vec3 aVertexPosition;
+attribute vec4 aVertexColor;
+attribute vec3 aNormal;
+    
+uniform mat4 uMVMatrix;
+uniform mat4 uPMatrix;
+
+varying highp vec4 vColor;
+varying highp vec3 vNorm;
+varying highp vec3 vPos;
+
+void main(void) {
+  gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+
+  vNorm = aNormal;
+  vPos = aVertexPosition;
+  vColor = aVertexColor;
+}
+</textarea> 
+ 
+<button id="btn">Redraw with updated shaders</button><br>
+<canvas width=200 height=200 id="c"></canvas>
+
+<script>
+  var gl = null;
+  var material = null;
+
+  $(document).ready(function() {
+    gl = $('#c').gl({
+      init: init,
+      draw: draw
+    });
+    $('#btn').click(refresh);
+  });
+
+  function init(gl) {
+    gl.x.initDepth(1.0);
+
+  var verts = [
+    // Front face
+    -1.0, -1.0,  1.0,
+     1.0, -1.0,  1.0,
+     1.0,  1.0,  1.0,
+    -1.0,  1.0,  1.0,
+    
+    // Back face
+    -1.0, -1.0, -1.0,
+    -1.0,  1.0, -1.0,
+     1.0,  1.0, -1.0,
+     1.0, -1.0, -1.0,
+    
+    // Top face
+    -1.0,  1.0, -1.0,
+    -1.0,  1.0,  1.0,
+     1.0,  1.0,  1.0,
+     1.0,  1.0, -1.0,
+    
+    // Bottom face
+    -1.0, -1.0, -1.0,
+     1.0, -1.0, -1.0,
+     1.0, -1.0,  1.0,
+    -1.0, -1.0,  1.0,
+    
+    // Right face
+     1.0, -1.0, -1.0,
+     1.0,  1.0, -1.0,
+     1.0,  1.0,  1.0,
+     1.0, -1.0,  1.0,
+    
+    // Left face
+    -1.0, -1.0, -1.0,
+    -1.0, -1.0,  1.0,
+    -1.0,  1.0,  1.0,
+    -1.0,  1.0, -1.0
+  ];
+  
+  var colors = [
+    [1.0,  1.0,  1.0,  1.0],    // Front face: white
+    [1.0,  0.0,  0.0,  1.0],    // Back face: red
+    [0.0,  1.0,  0.0,  1.0],    // Top face: green
+    [0.0,  0.0,  1.0,  1.0],    // Bottom face: blue
+    [1.0,  1.0,  0.0,  1.0],    // Right face: yellow
+    [1.0,  0.0,  1.0,  1.0]     // Left face: purple
+  ];
+
+  var generatedColors = [];
+  
+  for (j=0; j<6; j++) {
+    var c = colors[j];
+    
+    // Repeat each color four times for the four vertices of the face
+    
+    for (var i=0; i<4; i++) {
+      generatedColors = generatedColors.concat(c);
+    }
+  }
+ var elems = [
+    0,  1,  2,      0,  2,  3,    // front
+    4,  5,  6,      4,  6,  7,    // back
+    8,  9,  10,     8,  10, 11,   // top
+    12, 13, 14,     12, 14, 15,   // bottom
+    16, 17, 18,     16, 18, 19,   // right
+    20, 21, 22,     20, 22, 23    // left
+  ]
+
+  var norms = [  
+    // Front  
+     0.0,  0.0,  1.0,  
+     0.0,  0.0,  1.0,  
+     0.0,  0.0,  1.0,  
+     0.0,  0.0,  1.0,  
+      
+    // Back  
+     0.0,  0.0, -1.0,  
+     0.0,  0.0, -1.0,  
+     0.0,  0.0, -1.0,  
+     0.0,  0.0, -1.0,  
+      
+    // Top  
+     0.0,  1.0,  0.0,  
+     0.0,  1.0,  0.0,  
+     0.0,  1.0,  0.0,  
+     0.0,  1.0,  0.0,  
+      
+    // Bottom  
+     0.0, -1.0,  0.0,  
+     0.0, -1.0,  0.0,  
+     0.0, -1.0,  0.0,  
+     0.0, -1.0,  0.0,  
+      
+    // Right  
+     1.0,  0.0,  0.0,  
+     1.0,  0.0,  0.0,  
+     1.0,  0.0,  0.0,  
+     1.0,  0.0,  0.0,  
+      
+    // Left  
+    -1.0,  0.0,  0.0,  
+    -1.0,  0.0,  0.0,  
+    -1.0,  0.0,  0.0,  
+    -1.0,  0.0,  0.0  
+  ]; 
+
+
+    material = gl.x.createMaterial("vs", "fs");
+    material.addUniform(material.DefaultMatrix.P, "uPMatrix");
+    material.addUniform(material.DefaultMatrix.M, "uMVMatrix");
+    var model = gl.x.createModel(material, gl.TRIANGLES, 36);
+    model.addAttribute(verts, "aVertexPosition");
+    model.addAttribute(generatedColors, "aVertexColor", 4);
+    model.addAttribute(norms, "aNormal");
+    model.addElementArray(elems);
+  }
+
+  function refresh() {
+    material.loadShader("vs", gl.VERTEX_SHADER);
+    material.loadShader("fs", gl.FRAGMENT_SHADER);
+    material.link();
+    draw(gl);
+  }
+
+  function draw(gl) {
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+    gl.m.perspective(0.1, 100, 500, 500, 45.0);
+    gl.m.i();
+    gl.m.rotate(25, [1.0,1.0,0.0])
+    gl.m.translate([0, 0, -6.0])
+    gl.x.models().draw()
+  }
+</script>
