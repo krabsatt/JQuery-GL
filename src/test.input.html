@@ -3,28 +3,38 @@
 <script src="sylvester.src.js"></script>
 <style>
   textarea {
-    width: 300px;
+    width: 400px;
     height: 400px;
     float: left;
   }
 </style> 
-<textarea  width=80 height=80 id="fs"> 
+<textarea id="fs"> 
 // Fragment shader code
 varying highp vec4 vColor;
 varying highp vec3 vNorm;
 varying highp vec3 vPos;
 
 void main(void) {
-  highp vec4 amb = vec4(0.3,0.3,0.3,1);
-  highp vec3 l = vec3(-1.5, 1.5, 1.5);
-  highp float mult = dot(normalize(l - vPos), vNorm);
-  highp vec4 dlight = highp vec4(highp vec3(1,1,1) * mult, 1);
+  highp vec3 lPos = vec3(1, 1, -1);  
+  highp vec3 cPos = vec3(0, 0, 0);
 
-  gl_FragColor = vColor * (amb + dlight);
+  highp vec3 lDir = normalize(lPos - vPos);
+  highp vec3 vDir = normalize(vPos - cPos);
+  highp vec3 rDir = reflect(lDir,
+                            normalize(vNorm));
+
+  highp vec3 a = vec3(0,0,0);
+  highp float d = dot(lDir, normalize(vNorm));
+  highp float s = dot(rDir, vDir);
+  s = max(s, 0.0);
+  s = pow(s, 20.0);
+  
+  gl_FragColor = vec4(
+    vColor.rgb * (d + a) + s, 1);
 }
 </textarea> 
     
-<textarea width=80 height=80 type="textbox" id="vs"> 
+<textarea type="textbox" id="vs"> 
 // Vertex shader code
 attribute vec3 aVertexPosition;
 attribute vec4 aVertexColor;
@@ -32,16 +42,17 @@ attribute vec3 aNormal;
     
 uniform mat4 uMVMatrix;
 uniform mat4 uPMatrix;
+uniform mat4 uNMatrix;
 
 varying highp vec4 vColor;
 varying highp vec3 vNorm;
 varying highp vec3 vPos;
 
 void main(void) {
-  gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
-
-  vNorm = aNormal;
-  vPos = aVertexPosition;
+  gl_Position = uPMatrix * uMVMatrix *
+     vec4(aVertexPosition, 1.0);
+  vNorm = (uNMatrix * vec4(aNormal, 1)).xyz;
+  vPos = (uMVMatrix * vec4(aVertexPosition, 1)).xyz;
   vColor = aVertexColor;
 }
 </textarea> 
@@ -56,6 +67,7 @@ void main(void) {
   $(document).ready(function() {
     gl = $('#c').gl({
       init: init,
+      framerate: 12,
       draw: draw
     });
     $('#btn').click(refresh);
@@ -173,6 +185,7 @@ void main(void) {
     material = gl.x.createMaterial("vs", "fs");
     material.addUniform(material.DefaultMatrix.P, "uPMatrix");
     material.addUniform(material.DefaultMatrix.M, "uMVMatrix");
+    material.addUniform(material.DefaultMatrix.N, "uNMatrix");
     var model = gl.x.createModel(material, gl.TRIANGLES, 36);
     model.addAttribute(verts, "aVertexPosition");
     model.addAttribute(generatedColors, "aVertexColor", 4);
@@ -187,13 +200,17 @@ void main(void) {
     draw(gl);
   }
 
+  var theta = 0;
   function draw(gl) {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     gl.m.perspective(0.1, 100, 500, 500, 45.0);
     gl.m.i();
-    gl.m.rotate(25, [1.0,1.0,0.0])
-    gl.m.translate([0, 0, -6.0])
-    gl.x.models().draw()
+    gl.m.rotate(theta, [1.0,1.0,0.0]);
+    gl.m.translate([0, 0, -6.0]);
+    gl.x.models().draw();
+
+    // Update
+    theta += 5;
   }
 </script>

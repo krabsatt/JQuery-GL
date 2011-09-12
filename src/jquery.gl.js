@@ -7,7 +7,7 @@
 (function($) {
 
   var INFO = {
-    version: '0.71'
+    version: '0.72'
   }
 
   /**
@@ -24,9 +24,10 @@
     this._uniforms = {};
     this._textures = {};
     this.DefaultMatrix = {
-      P: 0,
-      M: 1,
-      C: 2
+      P: 0,  // Projection
+      M: 1,  // Movement
+      C: 2,  // Camera Orientation
+      N: 3   // Normals (inverse transpose of M)
     }
   };
 
@@ -169,6 +170,8 @@
         matrix = gl.m.p;
       } else if (matrix == this.DefaultMatrix.C) {
         matrix = gl.m.c;
+      } else if (matrix == this.DefaultMatrix.N) {
+        matrix = gl.m.m.inverse().transpose();
       }
       var uniform = gl.getUniformLocation(this.prog, name);
       if (!uniform) {
