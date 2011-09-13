@@ -7,7 +7,7 @@
 (function($) {
 
   var INFO = {
-    version: '0.72'
+    version: '0.73'
   }
 
   /**
@@ -121,10 +121,16 @@
   /**
    * Adds a texture to be used by the shader.
    *
+   * Texture image must be a square with size 2^n.
+   *
    * @param {String} src  The location of the texture image.
    * @param {String} name  The uniform name of the sampler.
+   * @param {function} callback  A function to be called when img loaded.
    */
-  Material.prototype.addTexture = function(src, name) {
+  Material.prototype.addTexture = function(src, name, callback) {
+    if (!name) {
+      alert('No uniform name supplied for texture: ' + src);
+    }
     gl = this._gl;
     texture = gl.createTexture();
     image = new Image();
@@ -139,6 +145,7 @@
       gl.generateMipmap(gl.TEXTURE_2D);
       gl.bindTexture(gl.TEXTURE_2D, null);
       outerThis._textures[name] = texture;
+      callback();
     }
     image.onload = onload;
     image.src = src;

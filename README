@@ -1,1 +1,5 @@
-This project is just getting started.  As we are getting the functionality fleshed out, please be patient.
+Compiling jquery.gl.min.js:
+  $ cd ./tools
+  $ python compile.py
+
+

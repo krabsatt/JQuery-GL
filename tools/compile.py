@@ -34,3 +34,6 @@ if not compiled:
 else:
   open(os.path.join(SRC, "jquery.gl.min.js"), "w").write(compiled)
   print "All is well with the world.  COMPILE SUCCEEDED."
+
+print "Hit Enter"
+sys.stdin.readline()
