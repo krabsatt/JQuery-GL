@@ -1,0 +1,79 @@
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
+<script src="../bin/jquery.gl.min.js"></script>
+<style>
+  textarea {
+    width: 400px;
+    height: 400px;
+    float: left;
+  }
+</style> 
+<textarea id="fs"> 
+// Fragment shader code
+varying highp vec2 vTex;
+uniform sampler2D uTex;
+void main(void) {
+  gl_FragColor = texture2D(uTex, vec2(vTex.s, vTex.t));
+}
+</textarea> 
+    
+<script id="vs" type="x-shader/x-vertex">
+  attribute vec3 aPos;
+  attribute vec2 aTex;
+  varying highp vec2 vTex;
+
+  void main(void) {
+    gl_Position = vec4(aPos, 1.0);
+    vTex = aTex;
+  }
+</script>
+ 
+<button id="btn">Redraw with updated shaders</button><br>
+<canvas width=256 height=256 id="c"></canvas>
+<img src="test_image.png"></img>
+
+<script>
+  var gl = null;
+  var material = null;
+
+  $(document).ready(function() {
+    gl = $('#c').gl({
+      init: init,
+      draw: draw
+    });
+    $('#btn').click(refresh);
+  });
+
+  function init(gl) {
+    gl.x.initDepth(1.0);
+
+    var verts = [
+      1.0,  -1.0,  0.0,
+      -1.0, -1.0,  0.0,
+      1.0,  1.0, 0.0,
+      -1.0, 1.0, 0.0
+      ];
+    var uv = [
+      1.0,  1.0,
+      0.0,  1.0,
+      1.0,  0.0,
+      0.0,  0.0,
+      ];
+    material = gl.x.createMaterial("vs", "fs");
+    material.addTexture("test_image.png", "uTex", function() {draw(gl)})
+
+    var model = gl.x.createModel(material, gl.TRIANGLE_STRIP, 4);
+    model.addAttribute(verts, "aPos");
+    model.addAttribute(uv, "aTex", 2);
+  }
+
+  function refresh() {
+    material.loadShader("fs", gl.FRAGMENT_SHADER);
+    material.link();
+    draw(gl);
+  }
+
+  function draw(gl) {
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.x.models().draw();
+  }
+</script>

@@ -1,0 +1,55 @@
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
+<script src="../bin/jquery.gl.min.js"></script>
+
+<script id="fs" type="x-shader/x-fragment">
+  void main(void) {
+    gl_FragColor = vec4(1.0, 0.0, 1.0, 1.0);
+  }
+</script>
+<script id="vs" type="x-shader/x-vertex">
+  attribute vec3 aPos;
+  uniform mat4 uM;
+  uniform mat4 uP;
+  void main(void) {
+    gl_Position = uP * uM * vec4(aPos, 1.0);
+  }
+</script>
+
+<canvas width=500 height=500 id="c"></canvas>
+
+<script>
+  $(document).ready(function() {
+    gl = $("#c").gl({
+      init: init,
+      draw: draw
+    });
+  });
+
+  function init(gl) {
+    gl.x.initDepth(1.0);
+
+    var verts = [
+      1.0,  1.0,  0.0,
+      -1.0, 1.0,  0.0,
+      1.0,  -1.0, 0.0,
+      -1.0, -1.0, 0.0
+      ];
+
+    var material = gl.x.createMaterial("vs", "fs");
+    material.addUniform(material.DefaultMatrix.P, "uP");
+    material.addUniform(material.DefaultMatrix.M, "uM");
+
+    var model = gl.x.createModel(material, gl.TRIANGLE_STRIP, 4);
+    model.addAttribute(verts, "aPos");
+    model.useOrientation()
+    model.o.translate([1,1,-6]);
+    model.o.rotate(10, [0,0,1]);
+  }
+
+  function draw(gl) {
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.m.perspective(0.1, 100, 500, 500, 45.0);
+    gl.m.i();
+    gl.x.models().draw();
+  }
+</script>
