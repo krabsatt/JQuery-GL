@@ -10,6 +10,14 @@ function GLExtension(gl) {
   this.info = INFO;
   this._models = [];
   this._gl = gl;
+
+  this._draw = function () {};
+  this._update = function () {};
+
+  this.frame = function () {
+    this._draw(this._gl);
+    this._update();
+  };
 }
 
 /**
@@ -66,4 +74,32 @@ GLExtension.prototype.models = function(selector) {
   }
   // TODO Add iteration
   return this._models[0];
+};
+
+GLExtension.prototype.draw = function(optFunc) {
+  if (optFunc) {
+    var oldDraw = this._draw;
+    this._draw = function(gl) {
+      oldDraw(gl);
+      optFunc(gl)
+    };
+  } else {
+    this._draw(this._gl);
+  }
+
+  return this;
+};
+
+GLExtension.prototype.update = function(optFunc) {
+  if (optFunc) {
+    var oldUpdate = this._update();
+    this._update = function() {
+      oldDraw();
+      optFunc()
+    };
+  } else {
+    this._update();
+  }
+
+  return this;
 };

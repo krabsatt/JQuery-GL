@@ -78,12 +78,14 @@
     if (opts.init) {
       opts.init(gl);
     }
+
     if (opts.draw) {
-      if (opts.framerate && opts.framerate > 0) {
-        setInterval(function() { opts.draw(gl); }, 1000.0/opts.framerate);
-      } else {
-        opts.draw(gl);
-      }
+      gl.x.draw(opts.draw);
+      opts.draw(gl);
+    }
+
+    if (opts.framerate && opts.framerate > 0) {
+      setInterval(function() { gl.x.frame(); }, 1000.0/opts.framerate);
     }
     return gl;
   };
