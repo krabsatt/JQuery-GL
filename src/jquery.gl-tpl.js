@@ -7,7 +7,7 @@
 (function($) {
 
   var INFO = {
-    version: '0.8'
+    version: '0.81'
   }
 
   // The INJECTION_POINT line is replaced with the jquery.gl-*.js files.

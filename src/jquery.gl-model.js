@@ -25,6 +25,7 @@ function Model(gl, material, type, length) {
   this._buffers = [];
   this._gl = gl;
   this._material = material
+  this._enabled = true;
   if (!material) {
     this._material = gl.x.currentMaterial;
   }
@@ -104,12 +105,15 @@ Model.prototype.useOrientation = function() {
   this.orientation = new MatrixManager();
   this.o = this.orientation;
   this.o.perspective = undefined;
-}
+};
 
 /**
  * Draws the model.
  */
 Model.prototype.draw = function() {
+  if (!this._enabled) {
+    return this;
+  }
   var gl = this._gl;
   if (this.o) {
     gl.m.push();
@@ -127,5 +131,18 @@ Model.prototype.draw = function() {
   } else {
     gl.drawArrays(this._type, 0, this._vert_length);
   }
-}
+  return this;
+};
 
+Model.prototype.show = function() {
+  this._enabled = true;
+  return this;
+};
+Model.prototype.hide = function() {
+  this._enabled = false;
+  return this;
+};
+Model.prototype.toggle = function() {
+  this._enabled = !this._enabled;
+  return this;
+};
