@@ -7,7 +7,7 @@
 (function($) {
 
   var INFO = {
-    version: '0.8'
+    version: '0.81'
   }
 
   // The INJECTION_POINT line is replaced with the jquery.gl-*.js files.
@@ -47,6 +47,36 @@ GLExtension.prototype.createModel = function(material, type, len) {
   this._models.push(model);
   return model
 }
+
+/**
+ * Loads a model from a json file at a given a url.
+ *
+ * @param {Material} material  The material to use to render the model.
+ * @param {String} url  The url of the file to load.
+ * @param {Object} attrs  A set of model fields and their corresponding
+ *                        shader attribute names.  The attribute name for
+ *                        verts must be set.
+ * @param {function} done  Called when the model is loaded.
+ */
+GLExtension.prototype.loadModel = function(material, url, attrs, done) {
+  $.ajax( url, {
+    dataType: "json",
+    error: function (jqXHR, textStatus, errorThrown) {
+       alert('Loading model from "' + url + '" failed: ' + textStatus)
+    },
+    success: function(ply) {
+        var model = gl.x.createModel(material, gl.TRIANGLES, ply.faces.length);
+        if (!attrs.verts) {
+          alert('Missing required attribute verts in loadModel param.');
+        }
+        for (attr in attrs) {
+          model.addAttribute(ply[attr], attrs[attr]);
+        }
+        model.addElementArray(ply.faces);
+        done(model);
+     }
+  });
+};
 
 /**
  * Creates a new material from shader script elements.
@@ -501,6 +531,7 @@ function Model(gl, material, type, length) {
   this._buffers = [];
   this._gl = gl;
   this._material = material
+  this._enabled = true;
   if (!material) {
     this._material = gl.x.currentMaterial;
   }
@@ -580,12 +611,15 @@ Model.prototype.useOrientation = function() {
   this.orientation = new MatrixManager();
   this.o = this.orientation;
   this.o.perspective = undefined;
-}
+};
 
 /**
  * Draws the model.
  */
 Model.prototype.draw = function() {
+  if (!this._enabled) {
+    return this;
+  }
   var gl = this._gl;
   if (this.o) {
     gl.m.push();
@@ -603,8 +637,21 @@ Model.prototype.draw = function() {
   } else {
     gl.drawArrays(this._type, 0, this._vert_length);
   }
-}
+  return this;
+};
 
+Model.prototype.show = function() {
+  this._enabled = true;
+  return this;
+};
+Model.prototype.hide = function() {
+  this._enabled = false;
+  return this;
+};
+Model.prototype.toggle = function() {
+  this._enabled = !this._enabled;
+  return this;
+};
 
 
   /**

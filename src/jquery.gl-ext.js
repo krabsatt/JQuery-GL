@@ -33,6 +33,36 @@ GLExtension.prototype.createModel = function(material, type, len) {
 }
 
 /**
+ * Loads a model from a json file at a given a url.
+ *
+ * @param {Material} material  The material to use to render the model.
+ * @param {String} url  The url of the file to load.
+ * @param {Object} attrs  A set of model fields and their corresponding
+ *                        shader attribute names.  The attribute name for
+ *                        verts must be set.
+ * @param {function} done  Called when the model is loaded.
+ */
+GLExtension.prototype.loadModel = function(material, url, attrs, done) {
+  $.ajax( url, {
+    dataType: "json",
+    error: function (jqXHR, textStatus, errorThrown) {
+       alert('Loading model from "' + url + '" failed: ' + textStatus)
+    },
+    success: function(ply) {
+        var model = gl.x.createModel(material, gl.TRIANGLES, ply.faces.length);
+        if (!attrs.verts) {
+          alert('Missing required attribute verts in loadModel param.');
+        }
+        for (attr in attrs) {
+          model.addAttribute(ply[attr], attrs[attr]);
+        }
+        model.addElementArray(ply.faces);
+        done(model);
+     }
+  });
+};
+
+/**
  * Creates a new material from shader script elements.
  *
  * @param {String} vsId:  The vertex shader script element id.
