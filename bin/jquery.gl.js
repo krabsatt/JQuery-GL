@@ -64,19 +64,40 @@ GLExtension.prototype.loadModel = function(material, url, attrs, done) {
     error: function (jqXHR, textStatus, errorThrown) {
        alert('Loading model from "' + url + '" failed: ' + textStatus)
     },
-    success: function(ply) {
-        var model = gl.x.createModel(material, gl.TRIANGLES, ply.faces.length);
-        if (!attrs.verts) {
-          alert('Missing required attribute verts in loadModel param.');
+    success: function(result) {
+      if (result.objs) {
+        for (var i = 0; i < result.objs.length; ++i) {
+          var obj = result.objs[i];
+          if (obj.mesh) {
+            var model = modelFromMesh(gl, obj.mesh, attrs);
+            done(model);
+          }
         }
-        for (attr in attrs) {
-          model.addAttribute(ply[attr], attrs[attr]);
-        }
-        model.addElementArray(ply.faces);
+      } else if (result.v) {
+        var model = modelFromMesh(gl, result, attrs);
         done(model);
-     }
+      }
+    }
   });
 };
+
+modelFromMesh = function(gl, mesh, attrs) {
+  var model = gl.x.createModel(material, gl.TRIANGLES, mesh.f.length);
+  if (!attrs.verts) {
+    alert('Missing required attribute verts in loadModel param.');
+  } else {
+    model.addAttribute(mesh.v, attrs.verts);
+  }
+  if (attrs.norms) {
+    if (!mesh.n) {
+      alert('Model missing norms param, but required by attrs.');
+    } else {
+      model.addAttribute(mesh.n, attrs.norms);
+    }
+  }
+  model.addElementArray(mesh.f);
+  return model;
+}
 
 /**
  * Creates a new material from shader script elements.
