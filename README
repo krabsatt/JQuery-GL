@@ -1,5 +1,9 @@
-Compiling jquery.gl.min.js:
+Directories:
+  src/       - All raw source goes here.
+  tools/     - Development tools go here.
+  examples/  - Examples demonstrating various uses of jquery-gl
+  bin/       - Assembled and compiled js files go here.
+
+Compiling bin/jquery.gl.min.js:
   $ cd ./tools
   $ python compile.py
-
-
