@@ -33,7 +33,7 @@
       init: init,
       draw: draw
     });
-    $('input').change(function(){draw(gl)});
+    $('input').change(function(){gl.x.draw();});
   });
 
   function init(gl) {
@@ -44,13 +44,8 @@
                   1.0,-1.0, 0.0,
                  -1.0,-1.0, 0.0];
 
-    var material = gl.x.createMaterial("vs", "fs");
-    material.addUniform(material.DefaultMatrix.P, "uP");
-    material.addUniform(material.DefaultMatrix.M, "uM");
-    material.addUniform(material.DefaultMatrix.C, "uC");
-
-    var model = gl.x.createModel(material, gl.TRIANGLE_STRIP, 4);
-    model.addAttribute(verts, "aPos");
+    var material = gl.x.material("vs", "fs").p("uP").m("uM").c("uC");
+    gl.x.model(material, gl.TRIANGLE_STRIP, 4).attr(verts, "aPos");
   }
 
   function draw(gl) {

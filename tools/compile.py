@@ -17,6 +17,7 @@ def assemble(include_sylvester, name):
   "jquery.gl-material.js",
   "jquery.gl-matrix.js",
   "jquery.gl-model.js",
+  "jquery.gl-util.js",
   ]
   if include_sylvester:
     files.append("sylvester.src.js")

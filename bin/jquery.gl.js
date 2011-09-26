@@ -7,7 +7,7 @@
 (function($) {
 
   var INFO = {
-    version: '0.81'
+    version: '0.85'
   }
 
   // The INJECTION_POINT line is replaced with the jquery.gl-*.js files.
@@ -45,11 +45,17 @@ function GLExtension(gl) {
 GLExtension.prototype.createModel = function(material, type, len) {
   model = new Model(this._gl, material, type, len);
   this._models.push(model);
-  return model
-}
+  return model;
+};
+
+GLExtension.prototype.model = GLExtension.prototype.createModel;
 
 /**
  * Loads a model from a json file at a given a url.
+ *
+ * To create json models, you can use blender along with blender-machete:
+ * http://blender.org
+ * http://code.google.com/p/blender-machete
  *
  * @param {Material} material  The material to use to render the model.
  * @param {String} url  The url of the file to load.
@@ -115,6 +121,8 @@ GLExtension.prototype.createMaterial = function(vsId, fsId) {
   material.link();
   return material;
 };
+
+GLExtension.prototype.material = GLExtension.prototype.createMaterial;
 
 /**
  * Initializes depth function and value.
@@ -197,6 +205,22 @@ function Material(gl) {
   }
 };
 
+Material.prototype.p = function(name) {
+ return this.addUniform(material.DefaultMatrix.P, name);
+};
+
+Material.prototype.m = function(name) {
+ return this.addUniform(material.DefaultMatrix.M, name);
+};
+
+Material.prototype.c = function(name) {
+ return this.addUniform(material.DefaultMatrix.C, name);
+};
+
+Material.prototype.n = function(name) {
+ return this.addUniform(material.DefaultMatrix.N, name);
+};
+
 /**
  * Links the underlying shader program.
  */
@@ -207,6 +231,7 @@ Material.prototype.link = function() {
   if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
     alert('Shader program link failed: ' + gl.getProgramInfoLog(prog));
   }
+  return this;
 };
 
 Material.prototype._createShader = function(e, type) {
@@ -260,6 +285,9 @@ var getScriptType = function(script, gl) {
 Material.prototype.loadShader = function(id, type) {
   var gl = this._gl;
   var e = $('#' + id);
+  if (!e || (e.length && (e.length == 0))) {
+    alert('Unable to find shader element with id ' + id);
+  }
   if (!type) {
     type = getType(e);
   }
@@ -273,6 +301,7 @@ Material.prototype.loadShader = function(id, type) {
     // Only marks for deletion.  Deleted when it becomes unused.
     gl.deleteShader(shader);
   }
+  return this;
 };
 
 /**
@@ -281,8 +310,11 @@ Material.prototype.loadShader = function(id, type) {
  * @param {Matrix|DefaultMatrix|Vector} matrix  A sylvester matrix.
  */
 Material.prototype.addUniform = function(matrix, name) {
-  this._uniforms[name] = matrix
+  this._uniforms[name] = matrix;
+  return this;
 };
+
+Material.prototype.uniform = Material.prototype.addUniform;
 
 /**
  * Adds a texture to be used by the shader.
@@ -315,7 +347,10 @@ Material.prototype.addTexture = function(src, name, callback) {
   }
   image.onload = onload;
   image.src = src;
+  return this;
 };
+
+Material.prototype.texture = Material.prototype.addTexture;
 
 /**
  * Sets texture samplers for shaders to use.
@@ -609,7 +644,10 @@ Model.prototype.addAttribute = function(array, attributeName, l) {
     buffer: buffer,
     l: l
   });
+  return this;
 };
+
+Model.prototype.attr = Model.prototype.addAttribute;
 
 /**
  * Sets the element index array buffer.
@@ -623,7 +661,10 @@ Model.prototype.addElementArray = function(elements) {
   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,
       new Uint16Array(elements), gl.STATIC_DRAW);
   this._elementArray = buffer;
+  return this;
 }
+
+Model.prototype.elem = Model.prototype.addElementArray;
 
 /**
  * Tells this model to use its own orientation matrix for drawing.
@@ -675,6 +716,51 @@ Model.prototype.toggle = function() {
 };
 
 
+// Copyright (c) 2011 Kevin Rabsatt
+//
+// The .util object we add to the WebGLRenderContext.
+
+function GLUtil(gl) {
+  this._gl = gl;
+}
+
+/**
+ * varying highp vec2 vTex;
+ */
+GLUtil.prototype.imageShader = function(fsId) {
+  // TODO(krabsatt): Load src from string directly.
+  var vsSrc =
+    '<script id="__vs" type="x-shader/x-vertex">\n' +
+    'attribute vec3 aPos;\n' +
+    'attribute vec2 aTex;\n' +
+    'varying highp vec2 vTex;\n' +
+    'void main(void) {\n' +
+    '  gl_Position = vec4(aPos, 1.0);\n' +
+    '  vTex = aTex;\n' +
+    '}\n</script>';
+  $('body').append(vsSrc);
+  var verts = [1.0,-1.0, 0.0,
+              -1.0,-1.0, 0.0,
+               1.0, 1.0, 0.0,
+              -1.0, 1.0, 0.0];
+  var uv = [1.0, 1.0,
+            0.0, 1.0,
+            1.0, 0.0,
+            0.0, 0.0];
+  var gl = this._gl;
+  gl.x.initDepth(1.0);
+  var material = gl.x.createMaterial("__vs", fsId);
+  var model = gl.x.createModel(material, gl.TRIANGLE_STRIP, 4);
+  model.addAttribute(verts, "aPos");
+  model.addAttribute(uv, "aTex", 2);
+  gl.x.draw(function(gl) {
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.x.models().draw();
+  });
+  return material;
+};
+
+
   /**
    * Mix in our extension properties.
    *
@@ -683,6 +769,7 @@ Model.prototype.toggle = function() {
   var mixIn = function(gl) {
     gl.m = new MatrixManager();
     gl.x = new GLExtension(gl);
+    gl.util = new GLUtil(gl);
   }
 
   /**
@@ -736,17 +823,17 @@ Model.prototype.toggle = function() {
     }
     mixIn(gl);
 
-    if (opts.init) {
-      opts.init(gl);
-    }
-
-    if (opts.draw) {
-      gl.x.draw(opts.draw);
-      opts.draw(gl);
-    }
-
-    if (opts.framerate && opts.framerate > 0) {
-      setInterval(function() { gl.x.frame(); }, 1000.0/opts.framerate);
+    if (opts) {
+      if (opts.init) {
+        opts.init(gl);
+      }
+      if (opts.draw) {
+        gl.x.draw(opts.draw);
+        opts.draw(gl);
+      }
+      if (opts.framerate && opts.framerate > 0) {
+        setInterval(function() { gl.x.frame(); }, 1000.0/opts.framerate);
+      }
     }
     return gl;
   };

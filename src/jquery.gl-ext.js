@@ -29,8 +29,10 @@ function GLExtension(gl) {
 GLExtension.prototype.createModel = function(material, type, len) {
   model = new Model(this._gl, material, type, len);
   this._models.push(model);
-  return model
-}
+  return model;
+};
+
+GLExtension.prototype.model = GLExtension.prototype.createModel;
 
 /**
  * Loads a model from a json file at a given a url.
@@ -103,6 +105,8 @@ GLExtension.prototype.createMaterial = function(vsId, fsId) {
   material.link();
   return material;
 };
+
+GLExtension.prototype.material = GLExtension.prototype.createMaterial;
 
 /**
  * Initializes depth function and value.

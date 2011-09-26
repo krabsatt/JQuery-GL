@@ -32,18 +32,14 @@ Converted to json using <a href="http://blender.org">blender</a> and <a href="ht
 
 <script>
   $(document).ready(function() {
-    gl = $("#c").gl({
-      init: init,
-    });
+    gl = $("#c").gl({init: init});
   });
 
   function init(gl) {
     gl.x.initDepth(1.0);
 
-    var material = gl.x.createMaterial("vs", "fs");
-    material.addUniform(material.DefaultMatrix.P, "uP");
-    material.addUniform(material.DefaultMatrix.M, "uM");
-    material.addUniform(material.DefaultMatrix.N, "uN");
+    var material = gl.x.material("vs", "fs");
+    material.p("uP").m("uM").n("uN");
 
     gl.x.loadModel(material, 'bunny.json', {verts:"aPos", norms: "aN"},
              function(model) {
@@ -58,7 +54,6 @@ Converted to json using <a href="http://blender.org">blender</a> and <a href="ht
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.m.perspective(0.1, 100, 500, 500, 45.0);
     gl.m.i();
-    if (gl.x.models())
     gl.x.models().draw();
   }
 </script>

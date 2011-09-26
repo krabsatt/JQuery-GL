@@ -82,7 +82,10 @@ Model.prototype.addAttribute = function(array, attributeName, l) {
     buffer: buffer,
     l: l
   });
+  return this;
 };
+
+Model.prototype.attr = Model.prototype.addAttribute;
 
 /**
  * Sets the element index array buffer.
@@ -96,7 +99,10 @@ Model.prototype.addElementArray = function(elements) {
   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,
       new Uint16Array(elements), gl.STATIC_DRAW);
   this._elementArray = buffer;
+  return this;
 }
+
+Model.prototype.elem = Model.prototype.addElementArray;
 
 /**
  * Tells this model to use its own orientation matrix for drawing.

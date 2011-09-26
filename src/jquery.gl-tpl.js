@@ -7,7 +7,7 @@
 (function($) {
 
   var INFO = {
-    version: '0.83'
+    version: '0.85'
   }
 
   // The INJECTION_POINT line is replaced with the jquery.gl-*.js files.
@@ -22,6 +22,7 @@
   var mixIn = function(gl) {
     gl.m = new MatrixManager();
     gl.x = new GLExtension(gl);
+    gl.util = new GLUtil(gl);
   }
 
   /**
@@ -75,17 +76,17 @@
     }
     mixIn(gl);
 
-    if (opts.init) {
-      opts.init(gl);
-    }
-
-    if (opts.draw) {
-      gl.x.draw(opts.draw);
-      opts.draw(gl);
-    }
-
-    if (opts.framerate && opts.framerate > 0) {
-      setInterval(function() { gl.x.frame(); }, 1000.0/opts.framerate);
+    if (opts) {
+      if (opts.init) {
+        opts.init(gl);
+      }
+      if (opts.draw) {
+        gl.x.draw(opts.draw);
+        opts.draw(gl);
+      }
+      if (opts.framerate && opts.framerate > 0) {
+        setInterval(function() { gl.x.frame(); }, 1000.0/opts.framerate);
+      }
     }
     return gl;
   };

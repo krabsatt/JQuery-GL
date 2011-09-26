@@ -23,6 +23,22 @@ function Material(gl) {
   }
 };
 
+Material.prototype.p = function(name) {
+ return this.addUniform(material.DefaultMatrix.P, name);
+};
+
+Material.prototype.m = function(name) {
+ return this.addUniform(material.DefaultMatrix.M, name);
+};
+
+Material.prototype.c = function(name) {
+ return this.addUniform(material.DefaultMatrix.C, name);
+};
+
+Material.prototype.n = function(name) {
+ return this.addUniform(material.DefaultMatrix.N, name);
+};
+
 /**
  * Links the underlying shader program.
  */
@@ -33,6 +49,7 @@ Material.prototype.link = function() {
   if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
     alert('Shader program link failed: ' + gl.getProgramInfoLog(prog));
   }
+  return this;
 };
 
 Material.prototype._createShader = function(e, type) {
@@ -86,6 +103,9 @@ var getScriptType = function(script, gl) {
 Material.prototype.loadShader = function(id, type) {
   var gl = this._gl;
   var e = $('#' + id);
+  if (!e || (e.length && (e.length == 0))) {
+    alert('Unable to find shader element with id ' + id);
+  }
   if (!type) {
     type = getType(e);
   }
@@ -99,6 +119,7 @@ Material.prototype.loadShader = function(id, type) {
     // Only marks for deletion.  Deleted when it becomes unused.
     gl.deleteShader(shader);
   }
+  return this;
 };
 
 /**
@@ -107,8 +128,11 @@ Material.prototype.loadShader = function(id, type) {
  * @param {Matrix|DefaultMatrix|Vector} matrix  A sylvester matrix.
  */
 Material.prototype.addUniform = function(matrix, name) {
-  this._uniforms[name] = matrix
+  this._uniforms[name] = matrix;
+  return this;
 };
+
+Material.prototype.uniform = Material.prototype.addUniform;
 
 /**
  * Adds a texture to be used by the shader.
@@ -141,7 +165,10 @@ Material.prototype.addTexture = function(src, name, callback) {
   }
   image.onload = onload;
   image.src = src;
+  return this;
 };
+
+Material.prototype.texture = Material.prototype.addTexture;
 
 /**
  * Sets texture samplers for shaders to use.
