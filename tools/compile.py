@@ -14,6 +14,7 @@ def assemble(include_sylvester, name):
   injected_src = ""
   files = [
   "jquery.gl-ext.js",
+  "jquery.gl-iter.js",
   "jquery.gl-material.js",
   "jquery.gl-matrix.js",
   "jquery.gl-model.js",

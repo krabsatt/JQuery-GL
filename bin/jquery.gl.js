@@ -7,7 +7,7 @@
 (function($) {
 
   var INFO = {
-    version: '0.85'
+    version: '0.86'
   }
 
   // The INJECTION_POINT line is replaced with the jquery.gl-*.js files.
@@ -147,8 +147,7 @@ GLExtension.prototype.models = function(selector) {
   if (typeof(selector) == 'number') {
     return this._models[selector];
   }
-  // TODO Add iteration
-  return this._models[0];
+  return new Iterator(Model, this._models);
 };
 
 GLExtension.prototype.draw = function(optFunc) {
@@ -177,6 +176,33 @@ GLExtension.prototype.update = function(optFunc) {
   }
 
   return this;
+};
+
+
+function Iterator(wrapped, items) {
+  this._items = items;
+  for (f in wrapped.prototype) {
+    if (typeof(wrapped.prototype[f]) == 'function') {
+      this.addFunction(f);
+    }
+  }
+};
+
+// Create a clean closure (using fn directly breaks)
+Iterator.prototype.addFunction = function(f) {
+  this[f] = function() {
+    for (var i = 0; i < this._items.length; ++i) {
+      if (arguments.length == 0) {
+        this._items[i][f]();
+      } else {
+        if (arguments.length != 1) {
+          alert('Too many args to an iterator.');
+        }
+        this._items[i][f](arguments[0]);
+      }
+    }
+    return this;
+  };
 };
 
 

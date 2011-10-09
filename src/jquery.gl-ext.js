@@ -131,8 +131,7 @@ GLExtension.prototype.models = function(selector) {
   if (typeof(selector) == 'number') {
     return this._models[selector];
   }
-  // TODO Add iteration
-  return this._models[0];
+  return new Iterator(Model, this._models);
 };
 
 GLExtension.prototype.draw = function(optFunc) {
