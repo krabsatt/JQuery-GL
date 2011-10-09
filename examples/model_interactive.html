@@ -1,0 +1,72 @@
+<title>jquery-gl example:Model</title>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
+<script src="../bin/jquery.gl.sylvester.js"></script>
+
+<script id="fs" type="x-shader/x-fragment">
+  varying highp vec3 vN;
+  void main(void) {
+    gl_FragColor = vec4(vN, 1.0);
+  }
+</script>
+<script id="vs" type="x-shader/x-vertex">
+  attribute vec3 aPos;
+  attribute vec3 aN;
+  uniform mat4 uM;
+  uniform mat4 uP;
+  uniform mat4 uN;
+
+  varying highp vec3 vN;
+  void main(void) {
+    gl_Position = uP * uM * vec4(aPos, 1.0);
+    vN = (uN * vec4(aN, 1.0)).xyz;
+  }
+</script>
+
+<canvas width=300 height=300 id="c"></canvas>
+<div id="msg" style="float:right"></div>
+<br>
+Model Credit:<br>
+Stanford Bunny courtesy <a href="http://graphics.stanford.edu/data/3Dscanrep/">
+  Stanford 3D Scan Respository</a><br>
+Converted to json using <a href="http://blender.org">blender</a> and <a href="http://code.google.com/p/blender-machete">blender-machete</a>
+
+<script>
+  $(document).ready(function() {
+    gl = $("#c").gl({
+      init: init,
+      draw: draw,
+      update: function(gl) { gl.x.models().update(); },
+      framerate: 24
+    });
+    $('#c').click(function() {
+      var bunny = gl.x.models(0);
+      bunny.running = ! bunny.running;
+    });
+  });
+
+  function init(gl) {
+    gl.x.initDepth(1.0);
+
+    var material = gl.x.material("vs", "fs");
+    material.p("uP").m("uM").n("uN");
+
+    gl.x.loadModel(material, 'bunny.json', {verts:"aPos", norms: "aN"},
+             function(model) {
+               model.useOrientation()
+               model.o.translate([0,-0.1,-0.5]);
+               model.o.rotate(10, [0,0,1]);
+               model.update(function() {
+                 if (model.running) {
+                   model.o.rotate(5, [0,1,0]);
+                 }
+               });
+             });
+  }
+
+  function draw(gl) {
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.m.perspective(0.1, 100, 500, 500, 45.0);
+    gl.m.i();
+    gl.x.models().draw();
+  }
+</script>

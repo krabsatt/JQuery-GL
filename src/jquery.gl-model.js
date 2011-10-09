@@ -33,7 +33,15 @@ function Model(gl, material, type, length) {
     alert('Must create a material before you can create a Model.');
   }
   this._elementArray = null;
+
+  this._update = function () {};
+  this.update = createAddOrCall('_update', this._gl);
+  this.draw = createAddOrCall('_draw', this._gl);
 }
+// Overwritten in the constructor, but defined on the prototype
+// so that Iterator picks them up.
+Model.prototype.update = function(gl) {}
+Model.prototype.draw = function(gl) {}
 
 /**
  * Binds all buffers we know about.
@@ -116,7 +124,7 @@ Model.prototype.useOrientation = function() {
 /**
  * Draws the model.
  */
-Model.prototype.draw = function() {
+Model.prototype._draw = function() {
   if (!this._enabled) {
     return this;
   }

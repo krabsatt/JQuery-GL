@@ -11,13 +11,15 @@ function GLExtension(gl) {
   this._models = [];
   this._gl = gl;
 
-  this._draw = function () {};
+  this._draw = function (gl) {};
+  this.draw = createAddOrCall('_draw', this._gl);
   this._update = function () {};
-
-  this.frame = function () {
+  this.update = createAddOrCall('_update', this._gl);
+  this._frame = function () {
     this._draw(this._gl);
-    this._update();
+    this._update(this._gl);
   };
+  this.frame = createAddOrCall('_frame', this._gl);
 }
 
 /**
@@ -132,32 +134,4 @@ GLExtension.prototype.models = function(selector) {
     return this._models[selector];
   }
   return new Iterator(Model, this._models);
-};
-
-GLExtension.prototype.draw = function(optFunc) {
-  if (optFunc) {
-    var oldDraw = this._draw;
-    this._draw = function(gl) {
-      oldDraw(gl);
-      optFunc(gl)
-    };
-  } else {
-    this._draw(this._gl);
-  }
-
-  return this;
-};
-
-GLExtension.prototype.update = function(optFunc) {
-  if (optFunc) {
-    var oldUpdate = this._update();
-    this._update = function() {
-      oldDraw();
-      optFunc()
-    };
-  } else {
-    this._update();
-  }
-
-  return this;
 };

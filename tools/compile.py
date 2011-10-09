@@ -13,6 +13,7 @@ import urllib
 def assemble(include_sylvester, name):
   injected_src = ""
   files = [
+  "jquery.gl-common.js",
   "jquery.gl-ext.js",
   "jquery.gl-iter.js",
   "jquery.gl-material.js",

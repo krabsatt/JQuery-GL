@@ -7,7 +7,7 @@
 (function($) {
 
   var INFO = {
-    version: '0.86'
+    version: '0.87'
   }
 
   // The INJECTION_POINT line is replaced with the jquery.gl-*.js files.
@@ -56,6 +56,7 @@
    * @param {Object} opts  An options object.  Required members:
    *                       init: A one-time initialization function.
    *                       draw: A draw function that takes context as a param.
+   *                       update: An update function.
    *                       framerate: The framerate to call draw.
    *                                  If not set or set to 0, scene is rendered
    *                                  once.
@@ -70,6 +71,11 @@
     var gl = null;
     if (e._jquery_gl) {
       gl = e._jquery_gl;
+      if (!opts) {
+        return gl;
+      } else {
+        alert('Re-wrapping a wrapped gl context not supported.');
+      }
     } else {
       gl = getContext(this[0]);
       e._jquery_gl = gl;
@@ -83,6 +89,9 @@
       if (opts.draw) {
         gl.x.draw(opts.draw);
         opts.draw(gl);
+      }
+      if (opts.update) {
+        gl.x.update(opts.update);
       }
       if (opts.framerate && opts.framerate > 0) {
         setInterval(function() { gl.x.frame(); }, 1000.0/opts.framerate);

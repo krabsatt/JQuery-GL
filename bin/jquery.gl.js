@@ -7,7 +7,7 @@
 (function($) {
 
   var INFO = {
-    version: '0.86'
+    version: '0.87'
   }
 
   // The INJECTION_POINT line is replaced with the jquery.gl-*.js files.
@@ -27,13 +27,15 @@ function GLExtension(gl) {
   this._models = [];
   this._gl = gl;
 
-  this._draw = function () {};
+  this._draw = function (gl) {};
+  this.draw = createAddOrCall('_draw', this._gl);
   this._update = function () {};
-
-  this.frame = function () {
+  this.update = createAddOrCall('_update', this._gl);
+  this._frame = function () {
     this._draw(this._gl);
-    this._update();
+    this._update(this._gl);
   };
+  this.frame = createAddOrCall('_frame', this._gl);
 }
 
 /**
@@ -148,34 +150,6 @@ GLExtension.prototype.models = function(selector) {
     return this._models[selector];
   }
   return new Iterator(Model, this._models);
-};
-
-GLExtension.prototype.draw = function(optFunc) {
-  if (optFunc) {
-    var oldDraw = this._draw;
-    this._draw = function(gl) {
-      oldDraw(gl);
-      optFunc(gl)
-    };
-  } else {
-    this._draw(this._gl);
-  }
-
-  return this;
-};
-
-GLExtension.prototype.update = function(optFunc) {
-  if (optFunc) {
-    var oldUpdate = this._update();
-    this._update = function() {
-      oldDraw();
-      optFunc()
-    };
-  } else {
-    this._update();
-  }
-
-  return this;
 };
 
 
@@ -633,7 +607,15 @@ function Model(gl, material, type, length) {
     alert('Must create a material before you can create a Model.');
   }
   this._elementArray = null;
+
+  this._update = function () {};
+  this.update = createAddOrCall('_update', this._gl);
+  this.draw = createAddOrCall('_draw', this._gl);
 }
+// Overwritten in the constructor, but defined on the prototype
+// so that Iterator picks them up.
+Model.prototype.update = function(gl) {}
+Model.prototype.draw = function(gl) {}
 
 /**
  * Binds all buffers we know about.
@@ -716,7 +698,7 @@ Model.prototype.useOrientation = function() {
 /**
  * Draws the model.
  */
-Model.prototype.draw = function() {
+Model.prototype._draw = function() {
   if (!this._enabled) {
     return this;
   }
@@ -841,6 +823,7 @@ GLUtil.prototype.imageShader = function(fsId) {
    * @param {Object} opts  An options object.  Required members:
    *                       init: A one-time initialization function.
    *                       draw: A draw function that takes context as a param.
+   *                       update: An update function.
    *                       framerate: The framerate to call draw.
    *                                  If not set or set to 0, scene is rendered
    *                                  once.
@@ -855,6 +838,11 @@ GLUtil.prototype.imageShader = function(fsId) {
     var gl = null;
     if (e._jquery_gl) {
       gl = e._jquery_gl;
+      if (!opts) {
+        return gl;
+      } else {
+        alert('Re-wrapping a wrapped gl context not supported.');
+      }
     } else {
       gl = getContext(this[0]);
       e._jquery_gl = gl;
@@ -868,6 +856,9 @@ GLUtil.prototype.imageShader = function(fsId) {
       if (opts.draw) {
         gl.x.draw(opts.draw);
         opts.draw(gl);
+      }
+      if (opts.update) {
+        gl.x.update(opts.update);
       }
       if (opts.framerate && opts.framerate > 0) {
         setInterval(function() { gl.x.frame(); }, 1000.0/opts.framerate);
