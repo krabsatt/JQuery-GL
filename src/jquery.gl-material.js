@@ -161,7 +161,9 @@ Material.prototype.addTexture = function(src, name, callback) {
     gl.generateMipmap(gl.TEXTURE_2D);
     gl.bindTexture(gl.TEXTURE_2D, null);
     outerThis._textures[name] = texture;
-    callback();
+    if (callback) {
+      callback();
+    }
   }
   image.onload = onload;
   image.src = src;

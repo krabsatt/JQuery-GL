@@ -17,6 +17,8 @@ function Model(gl, material, type, length) {
   if (!length) {
     alert('Tried to create a model with undefined length.');
   }
+  // Reserved for user use.
+  this.state = null;
   this.orientation = new MatrixManager();
   this.o = this.orientation;
   this.o.perspective = undefined;
@@ -34,6 +36,8 @@ function Model(gl, material, type, length) {
   }
   this._elementArray = null;
 
+  this._modifiers = {};
+
   this._update = function () {};
   this.update = createAddOrCall('_update', this._gl);
   this.draw = createAddOrCall('_draw', this._gl);
@@ -48,12 +52,20 @@ Model.prototype.draw = function(gl) {}
  */
 Model.prototype._setAttributes = function() {
   for (i = 0; i < this._buffers.length; ++i) {
-    attr = this._buffers[i].attr;
-    buffer = this._buffers[i].buffer;
-    l = this._buffers[i].l;
+    var name = this._buffers[i].name;
+    var attr = this._buffers[i].attr;
+    var buffer = this._buffers[i].buffer;
+    var l = this._buffers[i].l;
 
     var gl = this._gl;
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    // Run attribute modifiers
+    var mods = this._modifiers[name];
+    if (mods) {
+      for (var j =0; j < mods.length; j++) {
+        mods[j].modifyAttributeBuffer(buffer);
+      }
+    }
     gl.vertexAttribPointer(attr, l, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(attr);
   }
@@ -86,6 +98,7 @@ Model.prototype.addAttribute = function(array, attributeName, l) {
   gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(array), gl.STATIC_DRAW);
   this._buffers.push({
+    name: attributeName,
     attr: attribute,
     buffer: buffer,
     l: l
@@ -160,3 +173,18 @@ Model.prototype.toggle = function() {
   this._enabled = !this._enabled;
   return this;
 };
+
+/**
+ * Add an AttributeModifier for an attribute.
+ * 
+ * @param {string} attrName  The name of the attribute the modifier modifies.
+ * @param {Object} modifier  The modifier.
+ */
+Model.prototype.addModifier = function(attrName, modifier) {
+  if (this._modifiers[attrName]) {
+    this._modifiers[attrName].push(modifier)
+  } else {
+    this._modifiers[attrName] = [modifier];
+  }
+}
+

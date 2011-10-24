@@ -1,0 +1,65 @@
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
+<script src="../bin/jquery.gl.all.js" id=foo></script>
+
+<canvas width=300 height=300 id="c"></canvas>
+
+<script id="vs" type="x-shader/x-vertex">
+  // TODO TODO Move to file
+  attribute vec3 aPos;
+  attribute vec2 aTex;
+  uniform mat4 uM;
+  uniform mat4 uP;
+  varying highp vec2 vTex;
+  void main(void) {
+    gl_Position = uP * uM * vec4(aPos, 1.0);
+    vTex = aTex;
+  }
+</script>
+<script id="fs" type="x-shader/x-fragment">
+  varying highp vec2 vTex;
+  uniform sampler2D uTex;
+  void main(void) {
+    gl_FragColor = texture2D(uTex, vec2(vTex.s, vTex.t));
+  }
+</script>
+
+
+<script>
+  $(document).ready(function() {
+    $("#c").gl({
+      init: init,
+      framerate: 10,
+      draw: draw,
+      update: function(gl) { gl.x.models().update(); }
+    });
+  });
+
+function init(gl) {
+  gl.x.initDepth(1.0);
+  var material = gl.x.material("vs", "fs")
+  material.p("uP").m("uM").texture("frames.png", "uTex");
+  sprite = gl.x.sprite(material, 512,512, 100,100, "aTex", "aPos");
+  sprite.setSequence('loop', 0, 3, true);
+  sprite.useSequence('loop');
+  sprite.update(function(gl) {
+    if (sprite.state == 'walk')
+      sprite.nextFrame();
+  });
+
+  $('#c').click(function() {
+    if (sprite.state == 'rest') {
+      sprite.state = 'walk';
+      } else {
+      sprite.state = 'rest';
+    }
+  })
+}
+  function draw(gl) {
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.m.perspective(0.1, 100, 500, 500, 45.0);
+    gl.m.i();
+    gl.m.translate([1.0, 1.0, -6.0])
+    gl.x.models().draw();
+  }
+</script>
+  

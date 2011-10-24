@@ -7,7 +7,7 @@
 (function($) {
 
   var INFO = {
-    version: '0.87'
+    version: '0.88'
   }
 
   // The INJECTION_POINT line is replaced with the jquery.gl-*.js files.
@@ -50,7 +50,6 @@ function createAddOrCall(f, defaultGl) {
  * @constructor
  */
 function GLExtension(gl) {
-  this.info = INFO;
   this._models = [];
   this._gl = gl;
 
@@ -78,6 +77,30 @@ GLExtension.prototype.createModel = function(material, type, len) {
 };
 
 GLExtension.prototype.model = GLExtension.prototype.createModel;
+
+/**
+ * Creates a Model with a SpriteModifier.
+ */
+GLExtension.prototype.createSpritelyModel = function(
+    material, w, h, fw, fh, tex, pos) {
+  // TODO Move to an image plane generic
+  var verts = [ 1.0, 1.0, 0.0,
+               -1.0, 1.0, 0.0,
+                1.0,-1.0, 0.0,
+               -1.0,-1.0, 0.0];
+  var uv = [ 1.0,  1.0,
+             0.0,  1.0,
+             1.0,  0.0,
+             0.0,  0.0];
+  var model = this.createModel(material, gl.TRIANGLE_STRIP, 4);
+  model.addAttribute(verts, pos);
+  model.addAttribute(uv, tex, 2);
+  var mod = new SpriteModifier(this._gl, w, h, fw, fh);
+  model.addModifier(tex, mod);
+  return MixInSprite(model, mod);
+};
+
+GLExtension.prototype.sprite = GLExtension.prototype.createSpritelyModel;
 
 /**
  * Loads a model from a json file at a given a url.
@@ -382,7 +405,9 @@ Material.prototype.addTexture = function(src, name, callback) {
     gl.generateMipmap(gl.TEXTURE_2D);
     gl.bindTexture(gl.TEXTURE_2D, null);
     outerThis._textures[name] = texture;
-    callback();
+    if (callback) {
+      callback();
+    }
   }
   image.onload = onload;
   image.src = src;
@@ -618,6 +643,8 @@ function Model(gl, material, type, length) {
   if (!length) {
     alert('Tried to create a model with undefined length.');
   }
+  // Reserved for user use.
+  this.state = null;
   this.orientation = new MatrixManager();
   this.o = this.orientation;
   this.o.perspective = undefined;
@@ -635,6 +662,8 @@ function Model(gl, material, type, length) {
   }
   this._elementArray = null;
 
+  this._modifiers = {};
+
   this._update = function () {};
   this.update = createAddOrCall('_update', this._gl);
   this.draw = createAddOrCall('_draw', this._gl);
@@ -649,12 +678,20 @@ Model.prototype.draw = function(gl) {}
  */
 Model.prototype._setAttributes = function() {
   for (i = 0; i < this._buffers.length; ++i) {
-    attr = this._buffers[i].attr;
-    buffer = this._buffers[i].buffer;
-    l = this._buffers[i].l;
+    var name = this._buffers[i].name;
+    var attr = this._buffers[i].attr;
+    var buffer = this._buffers[i].buffer;
+    var l = this._buffers[i].l;
 
     var gl = this._gl;
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    // Run attribute modifiers
+    var mods = this._modifiers[name];
+    if (mods) {
+      for (var j =0; j < mods.length; j++) {
+        mods[j].modifyAttributeBuffer(buffer);
+      }
+    }
     gl.vertexAttribPointer(attr, l, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(attr);
   }
@@ -687,6 +724,7 @@ Model.prototype.addAttribute = function(array, attributeName, l) {
   gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(array), gl.STATIC_DRAW);
   this._buffers.push({
+    name: attributeName,
     attr: attribute,
     buffer: buffer,
     l: l
@@ -760,6 +798,163 @@ Model.prototype.hide = function() {
 Model.prototype.toggle = function() {
   this._enabled = !this._enabled;
   return this;
+};
+
+/**
+ * Add an AttributeModifier for an attribute.
+ * 
+ * @param {string} attrName  The name of the attribute the modifier modifies.
+ * @param {Object} modifier  The modifier.
+ */
+Model.prototype.addModifier = function(attrName, modifier) {
+  if (this._modifiers[attrName]) {
+    this._modifiers[attrName].push(modifier)
+  } else {
+    this._modifiers[attrName] = [modifier];
+  }
+}
+
+
+
+// Copyright (c) 2011 Kevin Rabsatt
+//
+// Sprites and SpriteModifiers.
+
+function _delegateTo(obj, fname) {
+  return function() {
+  obj[fname].apply(obj, arguments);
+  return this;
+  }
+}
+
+
+/**
+ * Mix sprite functionality into the owning Model.
+ *
+ * @param {Model} model  The model to mix sprite methods into.
+ * @param {SpriteModifier} modifier  The modifier to handle sprite calls.
+ * @return The Model mixed.
+ */
+function MixInSprite(model, modifier) {
+  model.setSequence = _delegateTo(modifier, 'setSequence');
+  model.useSequence = _delegateTo(modifier, 'useSequence');
+  model.nextFrame = function() { modifier.nextFrame() };
+  return model;
+}
+
+/**
+ * Model Attribute Modifier for multi-frame texture coord modification.
+ * Abstraction of a set of frames in a single texture.
+ *
+ * @param {WebGLRenderContext} gl  The owning context.
+ * @param {Number} width  The texture width in pixels.
+ * @param {Number} height  The texture hieght.
+ * @param {Number} fWidth  The frame width in pixels.
+ * @param {Number} fHeight  The frame height.
+ * @param {Object?} opts  Not implemented
+ * @constructor
+ */
+function SpriteModifier(gl, width, height, fWidth, fHeight, opts) {
+    this._frame = 0;
+  this._width = width;
+  this._height = height;
+  this._fWidth = fWidth;
+  this._fHeight = fHeight;
+  this._sequences = {};
+  this._sequence = null;
+  if (opts) {
+    // TODO set up a default sequence or starting frame
+  }
+  this._maxFrames = Math.floor(width/fWidth * height/fHeight);
+  this._gl = gl;
+  this._changed = true;
+}
+
+/**
+ * Show next frame.
+ */
+SpriteModifier.prototype.nextFrame = function() {
+  if (this._sequence) {
+    var seq = this._sequence;
+    if (this._frame < seq.end) {
+      this._frame++;
+      // Sequence can change underneath us.
+      if (this._frame < seq.start) {
+        this._frame = seq.start;
+      }
+    } else {
+      if (seq.loop) {
+        this._frame = seq.start;
+      }
+    }
+  } else {
+    this._frame = (this._frame + 1) % this._maxFrames;
+  }
+  this._changed = true;
+  return this;
+};
+
+/**
+ * Sets the named sequence as current.
+ *
+ * @param {string} name  The name of the sequence to use.
+ */
+SpriteModifier.prototype.useSequence = function(name) {
+  this._sequence = this._sequences[name];
+  return this;
+};
+
+/**
+ * Creates a new named sequence.
+ *
+ * @param {string} name  The name of the sequence.
+ * @param {Number} start  The first frame of the sequence.
+ * @param {Number} end  The last frame of the sequence.
+ * @param {boolean} loop  If the sequence should loop or not.
+ */
+SpriteModifier.prototype.setSequence = function(name, start, end, loop) {
+  this._sequences[name] = {
+    start: start,
+    end: end,
+    loop: loop
+  };
+  return this;
+};
+
+SpriteModifier.prototype._uvForFrame = function() {
+  var cols =  Math.floor(this._width/this._fWidth);
+  var rows =  Math.floor(this._height/this._fHeight);
+  var row = Math.floor(this._frame / cols);
+  var col = this._frame % rows;
+  // v-direction is opposite y-direction
+  v1 = (row * this._fWidth) / this._width;
+  v0 = ((row + 1) * this._fWidth) / this._width;
+  u0 =  (col * this._fHeight) / this._height;
+  u1 =  ((col + 1) * this._fHeight) / this._height;
+  
+  var uv = [u1, v1,
+            u0, v1,
+            u1, v0,
+            u0, v0];
+  return uv;
+};
+
+/**
+ * Attribute modifier interface.
+ *
+ * Called by the model on the buffer this modifier was assigned.
+ * Attribute and buffer are bound before calling this function.
+ *
+ * @param {WebGLBuffer} buffer  The buffer to modify.
+ */
+SpriteModifier.prototype.modifyAttributeBuffer = function(buffer) {
+  if (!this._changed) {
+    return;
+  }
+  var gl = this._gl;
+  var array = this._uvForFrame();
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(array), gl.STATIC_DRAW);
+  this._changed = false;
 };
 
 
@@ -891,6 +1086,7 @@ GLUtil.prototype.imageShader = function(fsId) {
         setInterval(function() { gl.x.frame(); }, 1000.0/opts.framerate);
       }
     }
+    gl.x.info = INFO
     return gl;
   };
 })(jQuery);

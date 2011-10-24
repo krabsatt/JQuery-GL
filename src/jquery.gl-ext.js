@@ -7,7 +7,6 @@
  * @constructor
  */
 function GLExtension(gl) {
-  this.info = INFO;
   this._models = [];
   this._gl = gl;
 
@@ -35,6 +34,30 @@ GLExtension.prototype.createModel = function(material, type, len) {
 };
 
 GLExtension.prototype.model = GLExtension.prototype.createModel;
+
+/**
+ * Creates a Model with a SpriteModifier.
+ */
+GLExtension.prototype.createSpritelyModel = function(
+    material, w, h, fw, fh, tex, pos) {
+  // TODO Move to an image plane generic
+  var verts = [ 1.0, 1.0, 0.0,
+               -1.0, 1.0, 0.0,
+                1.0,-1.0, 0.0,
+               -1.0,-1.0, 0.0];
+  var uv = [ 1.0,  1.0,
+             0.0,  1.0,
+             1.0,  0.0,
+             0.0,  0.0];
+  var model = this.createModel(material, gl.TRIANGLE_STRIP, 4);
+  model.addAttribute(verts, pos);
+  model.addAttribute(uv, tex, 2);
+  var mod = new SpriteModifier(this._gl, w, h, fw, fh);
+  model.addModifier(tex, mod);
+  return MixInSprite(model, mod);
+};
+
+GLExtension.prototype.sprite = GLExtension.prototype.createSpritelyModel;
 
 /**
  * Loads a model from a json file at a given a url.

@@ -9,18 +9,26 @@ import os
 import sys
 import urllib
 
-
-def assemble(include_sylvester, name):
-  injected_src = ""
-  files = [
+files = [
   "jquery.gl-common.js",
   "jquery.gl-ext.js",
   "jquery.gl-iter.js",
   "jquery.gl-material.js",
   "jquery.gl-matrix.js",
   "jquery.gl-model.js",
+  "jquery.gl-sprite.js",
   "jquery.gl-util.js",
   ]
+
+def make_imports(name):
+  src = []
+  for filename in files + ["jquery.gl-tpl.js"]:
+    src.append("document.write('<script src=../src/%s></script>');" % filename)
+  open("../bin/" + name, "w").write("\n".join(src))
+
+
+def assemble(include_sylvester, name):
+  injected_src = ""
   if include_sylvester:
     files.append("sylvester.src.js")
   for f in files:
@@ -32,6 +40,7 @@ def assemble(include_sylvester, name):
 
 assemble(False, "jquery.gl.js")
 assemble(True, "jquery.gl.sylvester.js")
+make_imports("jquery.gl.all.js")
 
 
 def get(output, js):
