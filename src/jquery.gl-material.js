@@ -24,19 +24,19 @@ function Material(gl) {
 };
 
 Material.prototype.p = function(name) {
- return this.addUniform(material.DefaultMatrix.P, name);
+ return this.addUniform(this.DefaultMatrix.P, name);
 };
 
 Material.prototype.m = function(name) {
- return this.addUniform(material.DefaultMatrix.M, name);
+ return this.addUniform(this.DefaultMatrix.M, name);
 };
 
 Material.prototype.c = function(name) {
- return this.addUniform(material.DefaultMatrix.C, name);
+ return this.addUniform(this.DefaultMatrix.C, name);
 };
 
 Material.prototype.n = function(name) {
- return this.addUniform(material.DefaultMatrix.N, name);
+ return this.addUniform(this.DefaultMatrix.N, name);
 };
 
 /**
@@ -52,7 +52,30 @@ Material.prototype.link = function() {
   return this;
 };
 
-Material.prototype._createShader = function(e, type) {
+Material.prototype.loadShaderSource = function(src, type) {
+  var gl = this._gl;
+  var shader = gl.createShader(type);
+  gl.shaderSource(shader, src);
+  gl.compileShader(shader);
+  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+    alert('Shader compilation failed: \n' + src + '\n\n' +
+          gl.getShaderInfoLog(shader));
+    return null;
+  }
+  if (shader) {
+    if (this._shaders[type]) {
+      gl.detachShader(this.prog, this._shaders[type]);
+    }
+    gl.attachShader(this.prog, shader);
+    this._shaders[type] = shader;
+    // Only marks for deletion.  Deleted when it becomes unused.
+    gl.deleteShader(shader);
+  }
+
+  return shader;
+}
+
+Material.prototype._createShader = function(src, type) {
   var gl = this._gl;
   var src = e.val();  // Check if input/textarea first.
   if ('' == src) {
@@ -71,16 +94,7 @@ Material.prototype._createShader = function(e, type) {
       return null;
     }
   }
-
-  var shader = gl.createShader(type);
-  gl.shaderSource(shader, src);
-  gl.compileShader(shader);
-  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    alert('Shader compilation failed: ' + id + ': ' +
-          gl.getShaderInfoLog(shader));
-    return null;
-  }
-  return shader;
+  return this.loadShaderSource(src, type);
 };
 
 var getScriptType = function(script, gl) {
@@ -110,15 +124,6 @@ Material.prototype.loadShader = function(id, type) {
     type = getType(e);
   }
   var shader = this._createShader(e, type);
-  if (shader) {
-    if (this._shaders[type]) {
-      gl.detachShader(this.prog, this._shaders[type]);
-    }
-    gl.attachShader(this.prog, shader);
-    this._shaders[type] = shader;
-    // Only marks for deletion.  Deleted when it becomes unused.
-    gl.deleteShader(shader);
-  }
   return this;
 };
 

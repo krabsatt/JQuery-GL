@@ -40,6 +40,7 @@ GLExtension.prototype.model = GLExtension.prototype.createModel;
  */
 GLExtension.prototype.createSpritelyModel = function(
     material, w, h, fw, fh, tex, pos) {
+  var gl = this._gl;
   // TODO Move to an image plane generic
   var verts = [ 1.0, 1.0, 0.0,
                -1.0, 1.0, 0.0,
@@ -95,6 +96,45 @@ GLExtension.prototype.loadModel = function(material, url, attrs, done) {
     }
   });
 };
+
+/**
+ * Loads a vertex and fragment shader from teh given urls.
+ * @param {string} vsUrl  The vertex shader src url.
+ * @param {string} fsUrl  The fragment shader src url.
+ */
+GLExtension.prototype.loadMaterial = function(vsUrl, fsUrl, callback) {
+  var gl = this._gl;
+  var material = new Material(gl);
+  var vsOk = false;
+  var fsOk = false;
+  $.ajax(vsUrl, {
+    dataType: "text",
+    error: function() { 'Loading sahder from ' + vsUrl + 'failed'; },
+    success: function(src) {
+      material.loadShaderSource(src, gl.VERTEX_SHADER);
+      if (fsOk) {
+        material.link();
+        callback(material);
+      }
+      vsOk = true;
+    }
+  });
+
+  $.ajax(fsUrl, {
+    dataType: "text",
+    error: function() { 'Loading sahder from ' + fsUrl + 'failed'; },
+    success: function(src) {
+      material.loadShaderSource(src, gl.FRAGMENT_SHADER);
+      if (vsOk) {
+        material.link();
+        callback(material);
+      }
+      fsOk = true;
+    }
+  });
+
+  return material;
+}
 
 modelFromMesh = function(gl, mesh, attrs) {
   var model = gl.x.createModel(material, gl.TRIANGLES, mesh.f.length);
