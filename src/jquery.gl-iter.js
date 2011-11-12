@@ -35,3 +35,15 @@ Iterator.prototype.addFunction = function(f) {
     return this;
   };
 };
+
+/**
+ * Calls a function on each wrapped item.
+ *
+ * @param {function} f  A function to call on each item.
+ */
+Iterator.prototype.each = function(f) {
+  for (var i = 0; i < this._items.length; ++i) {
+    f(this._items[i], i);
+  }
+  return this;
+};

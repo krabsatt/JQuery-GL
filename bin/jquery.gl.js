@@ -7,7 +7,7 @@
 (function($) {
 
   var INFO = {
-    version: '0.88'
+    version: '0.89'
   }
 
   // The INJECTION_POINT line is replaced with the jquery.gl-*.js files.
@@ -83,6 +83,7 @@ GLExtension.prototype.model = GLExtension.prototype.createModel;
  */
 GLExtension.prototype.createSpritelyModel = function(
     material, w, h, fw, fh, tex, pos) {
+  var gl = this._gl;
   // TODO Move to an image plane generic
   var verts = [ 1.0, 1.0, 0.0,
                -1.0, 1.0, 0.0,
@@ -138,6 +139,45 @@ GLExtension.prototype.loadModel = function(material, url, attrs, done) {
     }
   });
 };
+
+/**
+ * Loads a vertex and fragment shader from teh given urls.
+ * @param {string} vsUrl  The vertex shader src url.
+ * @param {string} fsUrl  The fragment shader src url.
+ */
+GLExtension.prototype.loadMaterial = function(vsUrl, fsUrl, callback) {
+  var gl = this._gl;
+  var material = new Material(gl);
+  var vsOk = false;
+  var fsOk = false;
+  $.ajax(vsUrl, {
+    dataType: "text",
+    error: function() { 'Loading sahder from ' + vsUrl + 'failed'; },
+    success: function(src) {
+      material.loadShaderSource(src, gl.VERTEX_SHADER);
+      if (fsOk) {
+        material.link();
+        callback(material);
+      }
+      vsOk = true;
+    }
+  });
+
+  $.ajax(fsUrl, {
+    dataType: "text",
+    error: function() { 'Loading sahder from ' + fsUrl + 'failed'; },
+    success: function(src) {
+      material.loadShaderSource(src, gl.FRAGMENT_SHADER);
+      if (vsOk) {
+        material.link();
+        callback(material);
+      }
+      fsOk = true;
+    }
+  });
+
+  return material;
+}
 
 modelFromMesh = function(gl, mesh, attrs) {
   var model = gl.x.createModel(material, gl.TRIANGLES, mesh.f.length);
@@ -241,6 +281,18 @@ Iterator.prototype.addFunction = function(f) {
   };
 };
 
+/**
+ * Calls a function on each wrapped item.
+ *
+ * @param {function} f  A function to call on each item.
+ */
+Iterator.prototype.each = function(f) {
+  for (var i = 0; i < this._items.length; ++i) {
+    f(this._items[i], i);
+  }
+  return this;
+};
+
 
 // Copyright (c) 2011 Kevin Rabsatt
 //
@@ -268,19 +320,19 @@ function Material(gl) {
 };
 
 Material.prototype.p = function(name) {
- return this.addUniform(material.DefaultMatrix.P, name);
+ return this.addUniform(this.DefaultMatrix.P, name);
 };
 
 Material.prototype.m = function(name) {
- return this.addUniform(material.DefaultMatrix.M, name);
+ return this.addUniform(this.DefaultMatrix.M, name);
 };
 
 Material.prototype.c = function(name) {
- return this.addUniform(material.DefaultMatrix.C, name);
+ return this.addUniform(this.DefaultMatrix.C, name);
 };
 
 Material.prototype.n = function(name) {
- return this.addUniform(material.DefaultMatrix.N, name);
+ return this.addUniform(this.DefaultMatrix.N, name);
 };
 
 /**
@@ -296,7 +348,30 @@ Material.prototype.link = function() {
   return this;
 };
 
-Material.prototype._createShader = function(e, type) {
+Material.prototype.loadShaderSource = function(src, type) {
+  var gl = this._gl;
+  var shader = gl.createShader(type);
+  gl.shaderSource(shader, src);
+  gl.compileShader(shader);
+  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+    alert('Shader compilation failed: \n' + src + '\n\n' +
+          gl.getShaderInfoLog(shader));
+    return null;
+  }
+  if (shader) {
+    if (this._shaders[type]) {
+      gl.detachShader(this.prog, this._shaders[type]);
+    }
+    gl.attachShader(this.prog, shader);
+    this._shaders[type] = shader;
+    // Only marks for deletion.  Deleted when it becomes unused.
+    gl.deleteShader(shader);
+  }
+
+  return shader;
+}
+
+Material.prototype._createShader = function(src, type) {
   var gl = this._gl;
   var src = e.val();  // Check if input/textarea first.
   if ('' == src) {
@@ -315,16 +390,7 @@ Material.prototype._createShader = function(e, type) {
       return null;
     }
   }
-
-  var shader = gl.createShader(type);
-  gl.shaderSource(shader, src);
-  gl.compileShader(shader);
-  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    alert('Shader compilation failed: ' + id + ': ' +
-          gl.getShaderInfoLog(shader));
-    return null;
-  }
-  return shader;
+  return this.loadShaderSource(src, type);
 };
 
 var getScriptType = function(script, gl) {
@@ -354,15 +420,6 @@ Material.prototype.loadShader = function(id, type) {
     type = getType(e);
   }
   var shader = this._createShader(e, type);
-  if (shader) {
-    if (this._shaders[type]) {
-      gl.detachShader(this.prog, this._shaders[type]);
-    }
-    gl.attachShader(this.prog, shader);
-    this._shaders[type] = shader;
-    // Only marks for deletion.  Deleted when it becomes unused.
-    gl.deleteShader(shader);
-  }
   return this;
 };
 
