@@ -348,6 +348,66 @@ Material.prototype.link = function() {
   return this;
 };
 
+Material.prototype._srcFromElement = function(e) {
+  var src = e.val();
+  if ('' == src) {
+    src = e.text();
+  }
+  var id = e.attr('id');
+  if (!src || src == '') {
+    alert('No source for shader with id: ' + id);
+    return null;
+  }
+  return src;
+};
+
+Material.prototype._typeFromElement = function(e) {
+  var gl = this._gl;
+  var type = script.attr('type');
+  if (type == 'x-shader/x-vertex') {
+    return compileShader(gl, src, scriptId, gl.VERTEX_SHADER);
+  }  else if (type == 'x-shader/x-fragment') {
+    return compileShader(gl, src, scriptId, gl.FRAGMENT_SHADER);
+  } else {
+    return null;
+  }
+  if (!type) {
+    alert('Shader script must have type attribute set to ' +
+        ' "x-shader/x-fragment" or "x-shader/x-vertex"');
+    return null;
+  }
+  return type;
+};
+
+Material.prototype._createShader = function(src, type) {
+  return this.loadShaderSource(src, type);
+};
+
+/**
+ * Loads a shader for the given type from an element with given id.
+ *
+ * @param {String} id  The id of the element containing source.
+ * @param {gl.FRAGMENT_SHADER|gl.VERTEX_SHADER} type  The shader type.
+ */
+Material.prototype.loadShader = function(id, type) {
+  var gl = this._gl;
+  var e = $('#' + id);
+  if (!e || (e.length && (e.length == 0))) {
+    alert('Unable to find shader element with id ' + id);
+  }
+  var src = this._srcFromElement(e);
+  if (!type) {
+    type = this._typeFromElement(e);
+  }
+  return this.loadShaderSource(src, type);  // this
+};
+
+/**
+ * Loads a shader for the given type from teh source code provided.
+ *
+ * @param {String} src  Source code for the shader.
+ * @param {gl.FRAGMENT_SHADER|gl.VERTEX_SHADER} type  The shader type.
+ */
 Material.prototype.loadShaderSource = function(src, type) {
   var gl = this._gl;
   var shader = gl.createShader(type);
@@ -367,59 +427,6 @@ Material.prototype.loadShaderSource = function(src, type) {
     // Only marks for deletion.  Deleted when it becomes unused.
     gl.deleteShader(shader);
   }
-
-  return shader;
-}
-
-Material.prototype._createShader = function(src, type) {
-  var gl = this._gl;
-  var src = e.val();  // Check if input/textarea first.
-  if ('' == src) {
-    src = e.text();
-  }
-  var id = e.attr('id');
-  if (!src || src == '') {
-    alert('No source for shader with id: ' + id);
-    return null;
-  }
-  if (!type) {
-    type = getScriptType(e, gl);
-    if (!type) {
-      alert('Shader script must have type attribute set to ' +
-            ' "x-shader/x-fragment" or "x-shader/x-vertex"');
-      return null;
-    }
-  }
-  return this.loadShaderSource(src, type);
-};
-
-var getScriptType = function(script, gl) {
-  var type = script.attr('type');
-  if (type == 'x-shader/x-vertex') {
-    return compileShader(gl, src, scriptId, gl.VERTEX_SHADER);
-  }  else if (type == 'x-shader/x-fragment') {
-    return compileShader(gl, src, scriptId, gl.FRAGMENT_SHADER);
-  } else {
-    return null;
-  }
-};
-
-/**
- * Loads a shader for the given type from an element with given id.
- *
- * @param {String} id  The id of the element containing source.
- * @param {gl.FRAGMENT_SHADER|gl.VERTEX_SHADER} type  The shader type.
- */
-Material.prototype.loadShader = function(id, type) {
-  var gl = this._gl;
-  var e = $('#' + id);
-  if (!e || (e.length && (e.length == 0))) {
-    alert('Unable to find shader element with id ' + id);
-  }
-  if (!type) {
-    type = getType(e);
-  }
-  var shader = this._createShader(e, type);
   return this;
 };
 
