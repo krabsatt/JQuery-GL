@@ -28,7 +28,7 @@ function GLExtension(gl) {
  * @return The created material.
  */
 GLExtension.prototype.createModel = function(material, type, len) {
-  model = new Model(this._gl, material, type, len);
+  var model = new Model(this._gl, material, type, len);
   this._models.push(model);
   return model;
 };
@@ -134,9 +134,9 @@ GLExtension.prototype.loadMaterial = function(vsUrl, fsUrl, callback) {
   });
 
   return material;
-}
+};
 
-modelFromMesh = function(gl, mesh, attrs) {
+var modelFromMesh = function(gl, mesh, attrs) {
   var model = gl.x.createModel(material, gl.TRIANGLES, mesh.f.length);
   if (!attrs.verts) {
     alert('Missing required attribute verts in loadModel param.');
@@ -152,7 +152,7 @@ modelFromMesh = function(gl, mesh, attrs) {
   }
   model.addElementArray(mesh.f);
   return model;
-}
+};
 
 /**
  * Creates a new material from shader script elements.
@@ -164,7 +164,7 @@ modelFromMesh = function(gl, mesh, attrs) {
 GLExtension.prototype.createMaterial = function(vsId, fsId) {
   var gl = this._gl;
   this.currentMaterial = new Material(gl);
-  material = this.currentMaterial;
+  var material = this.currentMaterial;
   material.loadShader(vsId,  gl.VERTEX_SHADER);
   material.loadShader(fsId,  gl.FRAGMENT_SHADER);
   material.link();
@@ -187,7 +187,7 @@ GLExtension.prototype.initDepth = function(depth) {
   gl.clearDepth(depth);
   gl.enable(gl.DEPTH_TEST);
   gl.depthFunc(gl.LEQUAL);
-}
+};
 
 /**
  * Gets the first model (temporary)
