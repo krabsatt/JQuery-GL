@@ -13,3 +13,6 @@ Notes:
   version does not.
   We use Google closure compiler (http://closure-compiler.appspot.com/home) to
   compile the library.
+
+Documentation:
+  http://sites.google.com/site/jquerygl
