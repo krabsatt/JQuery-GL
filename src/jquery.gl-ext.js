@@ -25,11 +25,26 @@ function GLExtension(gl) {
  * Create a model that uses the given material.
  *
  * @param {Material}  material  A material to use to draw the new model.
+ * @param
+ * @param {Object|Number}  lenOrAttrs  Vertex length or an object with
+ *     attribute arrays.  IMPORTANT: vertex array must be first attribute.            
  * @return The created material.
  */
-GLExtension.prototype.createModel = function(material, type, len) {
+GLExtension.prototype.createModel = function(material, type, lenOrAttrs) {
+  var len = 0;
+  if (typeof(lenOrAttrs) == 'object') {
+      len = lenOrAttrs[0].length;  // We assume the first attr is verts
+  } else {
+      len = lenOrAttrs;
+  }
   var model = new Model(this._gl, material, type, len);
   this._models.push(model);
+  // If attributes passed, set them up as well.
+  if (typeof(lenOrAttrs) == 'object') {
+      for (var attr in lenOrAttrs) {
+          model.setAttribute(lenOrAttrs[attr], attr);
+      }
+  }
   return model;
 };
 
