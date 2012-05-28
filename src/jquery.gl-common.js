@@ -15,7 +15,7 @@ function createAddOrCall(f, defaultGl) {
       var oldF = this[f];
       this[f] = function(gl) {
         oldF.apply(this, [gl]);
-        optFunc.apply(this, [gl])
+        optFunc.apply(this, [gl]);
       };
     } else {
       this[f](defaultGl);

@@ -25,11 +25,26 @@ function GLExtension(gl) {
  * Create a model that uses the given material.
  *
  * @param {Material}  material  A material to use to draw the new model.
+ * @param {Number}  type  A webgl vertex type enum value.
+ * @param {Object|Number}  lenOrAttrs  Vertex length or an object with
+ *     attribute arrays.  IMPORTANT: vertex array must be first attribute.            
  * @return The created material.
  */
-GLExtension.prototype.createModel = function(material, type, len) {
-  model = new Model(this._gl, material, type, len);
+GLExtension.prototype.createModel = function(material, type, lenOrAttrs) {
+  var len = 0;
+  if (typeof(lenOrAttrs) == 'object') {
+      len = lenOrAttrs[0].length;  // We assume the first attr is verts
+  } else {
+      len = lenOrAttrs;
+  }
+  var model = new Model(this._gl, material, type, len);
   this._models.push(model);
+  // If attributes passed, set them up as well.
+  if (typeof(lenOrAttrs) == 'object') {
+      for (var attr in lenOrAttrs) {
+          model.setAttribute(lenOrAttrs[attr], attr);
+      }
+  }
   return model;
 };
 
@@ -134,9 +149,9 @@ GLExtension.prototype.loadMaterial = function(vsUrl, fsUrl, callback) {
   });
 
   return material;
-}
+};
 
-modelFromMesh = function(gl, mesh, attrs) {
+var modelFromMesh = function(gl, mesh, attrs) {
   var model = gl.x.createModel(material, gl.TRIANGLES, mesh.f.length);
   if (!attrs.verts) {
     alert('Missing required attribute verts in loadModel param.');
@@ -152,7 +167,7 @@ modelFromMesh = function(gl, mesh, attrs) {
   }
   model.addElementArray(mesh.f);
   return model;
-}
+};
 
 /**
  * Creates a new material from shader script elements.
@@ -164,7 +179,7 @@ modelFromMesh = function(gl, mesh, attrs) {
 GLExtension.prototype.createMaterial = function(vsId, fsId) {
   var gl = this._gl;
   this.currentMaterial = new Material(gl);
-  material = this.currentMaterial;
+  var material = this.currentMaterial;
   material.loadShader(vsId,  gl.VERTEX_SHADER);
   material.loadShader(fsId,  gl.FRAGMENT_SHADER);
   material.link();
@@ -187,7 +202,24 @@ GLExtension.prototype.initDepth = function(depth) {
   gl.clearDepth(depth);
   gl.enable(gl.DEPTH_TEST);
   gl.depthFunc(gl.LEQUAL);
-}
+};
+
+/**
+ * Clears the gl buffer with some sensible defaults.
+ * 
+ * TODO: This is the only draw-time shortcut and shouldn't be here.  Figure out
+ * where it should be and clean up interface segmentation.
+ * 
+ * @param {Number?}  flags  Flags of what buffers to clear.
+ *                          Default: Color and depth.
+ */
+GLExtension.prototype.clear = function(flags) {
+  var gl = this._gl;
+  if (!flags) {
+      flags = gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT;
+  }
+  gl.clear(flags);
+};
 
 /**
  * Gets the first model (temporary)
