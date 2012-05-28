@@ -144,7 +144,7 @@ GLExtension.prototype.loadModel = function(material, url, attrs, done) {
         for (var i = 0; i < result.objs.length; ++i) {
           var obj = result.objs[i];
           if (obj.mesh) {
-            var model = modelFromMesh(gl, obj.mesh, attrs);
+            var model = modelFromMesh(gl, material, obj.mesh, attrs);
             done(model);
           }
         }
