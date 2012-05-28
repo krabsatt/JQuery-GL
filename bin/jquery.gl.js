@@ -7,7 +7,7 @@
 (function($) {
 
   var INFO = {
-    version: '0.89'
+    version: '0.901'
   }
 
   // The INJECTION_POINT line is replaced with the jquery.gl-*.js files.
@@ -31,7 +31,7 @@ function createAddOrCall(f, defaultGl) {
       var oldF = this[f];
       this[f] = function(gl) {
         oldF.apply(this, [gl]);
-        optFunc.apply(this, [gl])
+        optFunc.apply(this, [gl]);
       };
     } else {
       this[f](defaultGl);
@@ -68,11 +68,26 @@ function GLExtension(gl) {
  * Create a model that uses the given material.
  *
  * @param {Material}  material  A material to use to draw the new model.
+ * @param {Number}  type  A webgl vertex type enum value.
+ * @param {Object|Number}  lenOrAttrs  Vertex length or an object with
+ *     attribute arrays.  IMPORTANT: vertex array must be first attribute.            
  * @return The created material.
  */
-GLExtension.prototype.createModel = function(material, type, len) {
+GLExtension.prototype.createModel = function(material, type, lenOrAttrs) {
+  var len = 0;
+  if (typeof(lenOrAttrs) == 'object') {
+      len = lenOrAttrs[0].length;  // We assume the first attr is verts
+  } else {
+      len = lenOrAttrs;
+  }
   var model = new Model(this._gl, material, type, len);
   this._models.push(model);
+  // If attributes passed, set them up as well.
+  if (typeof(lenOrAttrs) == 'object') {
+      for (var attr in lenOrAttrs) {
+          model.setAttribute(lenOrAttrs[attr], attr);
+      }
+  }
   return model;
 };
 
@@ -177,9 +192,9 @@ GLExtension.prototype.loadMaterial = function(vsUrl, fsUrl, callback) {
   });
 
   return material;
-}
+};
 
-modelFromMesh = function(gl, mesh, attrs) {
+var modelFromMesh = function(gl, mesh, attrs) {
   var model = gl.x.createModel(material, gl.TRIANGLES, mesh.f.length);
   if (!attrs.verts) {
     alert('Missing required attribute verts in loadModel param.');
@@ -195,7 +210,7 @@ modelFromMesh = function(gl, mesh, attrs) {
   }
   model.addElementArray(mesh.f);
   return model;
-}
+};
 
 /**
  * Creates a new material from shader script elements.
@@ -207,7 +222,7 @@ modelFromMesh = function(gl, mesh, attrs) {
 GLExtension.prototype.createMaterial = function(vsId, fsId) {
   var gl = this._gl;
   this.currentMaterial = new Material(gl);
-  material = this.currentMaterial;
+  var material = this.currentMaterial;
   material.loadShader(vsId,  gl.VERTEX_SHADER);
   material.loadShader(fsId,  gl.FRAGMENT_SHADER);
   material.link();
@@ -230,7 +245,24 @@ GLExtension.prototype.initDepth = function(depth) {
   gl.clearDepth(depth);
   gl.enable(gl.DEPTH_TEST);
   gl.depthFunc(gl.LEQUAL);
-}
+};
+
+/**
+ * Clears the gl buffer with some sensible defaults.
+ * 
+ * TODO: This is the only draw-time shortcut and shouldn't be here.  Figure out
+ * where it should be and clean up interface segmentation.
+ * 
+ * @param {Number?}  flags  Flags of what buffers to clear.
+ *                          Default: Color and depth.
+ */
+GLExtension.prototype.clear = function(flags) {
+  var gl = this._gl;
+  if (!flags) {
+      flags = gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT;
+  }
+  gl.clear(flags);
+};
 
 /**
  * Gets the first model (temporary)
@@ -455,9 +487,9 @@ Material.prototype.addTexture = function(src, name, callback) {
   if (!name) {
     alert('No uniform name supplied for texture: ' + src);
   }
-  var gl = this._gl;
-  var texture = gl.createTexture();
-  var image = new Image();
+  gl = this._gl;
+  texture = gl.createTexture();
+  image = new Image();
   var outerThis = this;
   var onload = function() {
     gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -472,7 +504,7 @@ Material.prototype.addTexture = function(src, name, callback) {
     if (callback) {
       callback();
     }
-  };
+  }
   image.onload = onload;
   image.src = src;
   return this;
@@ -524,7 +556,7 @@ Material.prototype.setUniforms = function() {
 
     gl.uniformMatrix4fv(uniform, false, new Float32Array(flat));
   }
-};
+}
 
 
 
@@ -564,7 +596,7 @@ MatrixManager.prototype.lookAt = function(eye, focus, up) {
        [0, 0, 0, 1]]);
   var t = createTranslation(eye.x(-1));
   this.c = m.x(t);
-};
+}
 
 /**
  * Creates a perspective projection matrix and sets this.p.
@@ -598,11 +630,11 @@ MatrixManager.prototype.perspective = function(
 
 MatrixManager.prototype.push = function() {
   this._stack.push(this.m.dup());
-};
+}
 
 MatrixManager.prototype.pop = function() {
-  this.m = this._stack.pop();
-};
+  this.m = this._stack.pop()
+}
 
 /**
  * Multiplies the matrix with current state matrix in transformation order.
@@ -612,7 +644,7 @@ MatrixManager.prototype.pop = function() {
 MatrixManager.prototype.apply = function(m) {
   this.m = m.x(this.m);
   return this.m;
-};
+}
 
 /**
  * Creates an identity matrix.
@@ -622,7 +654,7 @@ MatrixManager.prototype.apply = function(m) {
 MatrixManager.prototype.identity = function() {
   this.m = Matrix.I(4);
   return this.m;
-};
+}
 
 /**
  * Creates an identity matrix.
@@ -631,7 +663,7 @@ MatrixManager.prototype.identity = function() {
  */
 MatrixManager.prototype.i = function() {
   return this.identity();
-};
+}
 
 var createTranslation = function(v) {
   var t = Matrix.I(4);
@@ -643,7 +675,7 @@ var createTranslation = function(v) {
     t.elements[i][3] = v[i];
   }
   return t;
-};
+}
 
 /**
  * Creates and applies a translation matrix.
@@ -655,7 +687,7 @@ MatrixManager.prototype.translate = function(v) {
   var t = createTranslation(v);
   this.apply(t);
   return t;
-};
+}
 
 /**
  * Creates and applies a rotation matrix.
@@ -683,7 +715,7 @@ MatrixManager.prototype.rotate = function(theta, v) {
 
   this.apply(r);
   return r;
-};
+}
 
 
 
@@ -716,7 +748,7 @@ function Model(gl, material, type, length) {
   this._type = type;
   this._buffers = [];
   this._gl = gl;
-  this._material = material;
+  this._material = material
   this._enabled = true;
   if (!material) {
     this._material = gl.x.currentMaterial;
@@ -734,20 +766,20 @@ function Model(gl, material, type, length) {
 }
 // Overwritten in the constructor, but defined on the prototype
 // so that Iterator picks them up.
-Model.prototype.update = function(gl) {};
-Model.prototype.draw = function(gl) {};
+Model.prototype.update = function(gl) {}
+Model.prototype.draw = function(gl) {}
 
 /**
  * Binds all buffers we know about.
  */
 Model.prototype._setAttributes = function() {
-  var gl = this._gl;
-  for (var i = 0; i < this._buffers.length; ++i) {
+  for (i = 0; i < this._buffers.length; ++i) {
     var name = this._buffers[i].name;
     var attr = this._buffers[i].attr;
     var buffer = this._buffers[i].buffer;
     var l = this._buffers[i].l;
 
+    var gl = this._gl;
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
     // Run attribute modifiers
     var mods = this._modifiers[name];
@@ -805,13 +837,13 @@ Model.prototype.attr = Model.prototype.addAttribute;
  */
 Model.prototype.addElementArray = function(elements) {
   var gl = this._gl;
-  var buffer = gl.createBuffer();
+  buffer = gl.createBuffer();
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,
       new Uint16Array(elements), gl.STATIC_DRAW);
   this._elementArray = buffer;
   return this;
-};
+}
 
 Model.prototype.elem = Model.prototype.addElementArray;
 
@@ -876,7 +908,7 @@ Model.prototype.addModifier = function(attrName, modifier) {
   } else {
     this._modifiers[attrName] = [modifier];
   }
-};
+}
 
 
 
@@ -886,9 +918,9 @@ Model.prototype.addModifier = function(attrName, modifier) {
 
 function _delegateTo(obj, fname) {
   return function() {
-    obj[fname].apply(obj, arguments);
-    return this;
-  };
+  obj[fname].apply(obj, arguments);
+  return this;
+  }
 }
 
 
