@@ -172,6 +172,8 @@ var modelFromMesh = function(gl, material, mesh, attrs) {
 
 /**
  * Creates a new material from shader script elements.
+ * 
+ * NOTE: The *Id params below now also accept script src directly.
  *
  * @param {String} vsId:  The vertex shader script element id.
  * @param {String} fsId:  The fragment shader script element id.
@@ -181,8 +183,8 @@ GLExtension.prototype.createMaterial = function(vsId, fsId) {
   var gl = this._gl;
   this.currentMaterial = new Material(gl);
   var material = this.currentMaterial;
-  material.loadShader(vsId,  gl.VERTEX_SHADER);
-  material.loadShader(fsId,  gl.FRAGMENT_SHADER);
+  material.vs(vsId);
+  material.fs(fsId);
   material.link();
   return material;
 };

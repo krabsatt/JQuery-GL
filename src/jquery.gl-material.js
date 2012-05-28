@@ -65,27 +65,63 @@ Material.prototype._srcFromElement = function(e) {
   return src;
 };
 
-// TODO: This is broken.  Rewrite this logic
+/**
+ * Try to discover the type of script from the script type attribute.
+ */
 Material.prototype._typeFromElement = function(script) {
   var gl = this._gl;
   var type = script.attr('type');
   if (type == 'x-shader/x-vertex') {
-    return compileShader(gl, src, scriptId, gl.VERTEX_SHADER);
+    return gl.VERTEX_SHADER;
   }  else if (type == 'x-shader/x-fragment') {
-    return compileShader(gl, src, scriptId, gl.FRAGMENT_SHADER);
-  } else {
-    return null;
+    return gl.FRAGMENT_SHADER;
   }
-  if (!type) {
-    alert('Shader script must have type attribute set to ' +
+  alert('Shader script must have type attribute set to ' +
         ' "x-shader/x-fragment" or "x-shader/x-vertex"');
-    return null;
-  }
-  return type;
+  return null;
 };
 
-Material.prototype._createShader = function(src, type) {
-  return this.loadShaderSource(src, type);
+/**
+ * Extracts source from an element if an id is given.
+ * 
+ */
+var _extractSrc = function(idOrSrc) {
+  if (idOrSrc.find('{')) {
+    return idOrSrc;
+  } else {
+    var id = idOrSrc;
+    var e = $('#' + id);
+    if (!e || (e.length && (e.length === 0))) {
+      alert('Unable to find shader element with id ' + id);
+    }
+    return this._srcFromElement(e);
+  }
+};
+
+/**
+ * Loads a vertex shader.
+ * 
+ * You will need to call link() after loading any shaders.
+ * 
+ * @param {String}  idOrSrc  Either the id of an element to pull source from or
+ *                           actual source to laod.
+ */
+Material.prototype.vs = function(idOrSrc) {
+  var src = _extractSrc(idOrSrc);
+  return this.loadShaderSource(src, this._gl.VERTEX_SHADER);  // this
+};
+
+/**
+ * Loads a fragment shader.
+ * 
+ * You will need to call link() after loading any shaders.
+ * 
+ * @param {String}  idOrSrc  Either the id of an element to pull source from or
+ *                           actual source to laod.
+ */
+Material.prototype.vs = function(idOrSrc) {
+  var src = _extractSrc(idOrSrc);
+  return this.loadShaderSource(src, this._gl.FRAGMENT_SHADER);  // this
 };
 
 /**
@@ -96,7 +132,7 @@ Material.prototype._createShader = function(src, type) {
  */
 Material.prototype.loadShader = function(id, type) {
   var e = $('#' + id);
-  if (!e || (e.length && (e.length == 0))) {
+  if (!e || (e.length && (e.length === 0))) {
     alert('Unable to find shader element with id ' + id);
   }
   var src = this._srcFromElement(e);

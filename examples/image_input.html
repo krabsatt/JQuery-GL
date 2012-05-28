@@ -26,7 +26,7 @@ void main(void) {
     var material = gl.util.imageShader("fs").texture(
         "test_image.png", "uTex", function() {gl.x.draw();});
     $('#btn').click(function() {
-      material.loadShader("fs", gl.FRAGMENT_SHADER);
+      material.fs("fs");
       material.link();
       gl.x.draw();
     });
