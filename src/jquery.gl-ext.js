@@ -105,7 +105,7 @@ GLExtension.prototype.loadModel = function(material, url, attrs, done) {
           }
         }
       } else if (result.v) {
-        var model = modelFromMesh(gl, result, attrs);
+        var model = modelFromMesh(gl, material, result, attrs);
         done(model);
       }
     }
@@ -151,7 +151,7 @@ GLExtension.prototype.loadMaterial = function(vsUrl, fsUrl, callback) {
   return material;
 };
 
-var modelFromMesh = function(gl, mesh, attrs) {
+var modelFromMesh = function(gl, material, mesh, attrs) {
   var model = gl.x.createModel(material, gl.TRIANGLES, mesh.f.length);
   if (!attrs.verts) {
     alert('Missing required attribute verts in loadModel param.');

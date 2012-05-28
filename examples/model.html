@@ -2,13 +2,13 @@
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
 <script src="../bin/jquery.gl.min.js"></script>
 
-<script id="fs" type="x-shader/x-fragment">
+<canvas width=500 height=500 id="c"></canvas>
+<br>
+Model Credit:<br>
+Stanford Bunny courtesy <a href="http://graphics.stanford.edu/data/3Dscanrep/">
+  Stanford 3D Scan Respository</a><br>
+Converted to json using <a href="http://blender.org">blender</a> and <a href="http://code.google.com/p/blender-machete">blender-machete</a>
 
-  varying highp vec3 vN;
-  void main(void) {
-    gl_FragColor = vec4(vN, 1.0);
-  }
-</script>
 <script id="vs" type="x-shader/x-vertex">
   attribute vec3 aPos;
   attribute vec3 aN;
@@ -23,37 +23,36 @@
   }
 </script>
 
-<canvas width=500 height=500 id="c"></canvas>
-<br>
-Model Credit:<br>
-Stanford Bunny courtesy <a href="http://graphics.stanford.edu/data/3Dscanrep/">
-  Stanford 3D Scan Respository</a><br>
-Converted to json using <a href="http://blender.org">blender</a> and <a href="http://code.google.com/p/blender-machete">blender-machete</a>
+<script id="fs" type="x-shader/x-fragment">
+  varying highp vec3 vN;
+  void main(void) {
+    gl_FragColor = vec4(vN, 1.0);
+  }
+</script>
 
 <script>
-  $(document).ready(function() {
-    gl = $("#c").gl({init: init});
-  });
-
   function init(gl) {
     gl.x.initDepth(1.0);
 
-    var material = gl.x.material("vs", "fs");
-    material.p("uP").m("uM").n("uN");
+    var material = gl.x.material("vs", "fs").p("uP").m("uM").n("uN");
 
     gl.x.loadModel(material, 'bunny.json', {verts:"aPos", norms: "aN"},
              function(model) {
                model.useOrientation()
                model.o.translate([0,-0.1,-0.5]);
                model.o.rotate(10, [0,0,1]);
-               draw(gl);
+               draw(gl);  // Just draw when model loaded.
              });
   }
 
   function draw(gl) {
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.x.clear();
     gl.m.perspective(0.1, 100, 500, 500, 45.0);
     gl.m.i();
     gl.x.models().draw();
   }
+
+  $(function() {
+    gl = $("#c").gl({init: init});
+  });
 </script>

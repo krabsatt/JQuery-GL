@@ -1,11 +1,9 @@
+<title>jquery-gl example:Draw A Line</title>
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
 <script src="../bin/jquery.gl.min.js"></script>
 
-<script id="fs" type="x-shader/x-fragment">
-  void main(void) {
-    gl_FragColor = vec4(1.0, 0.0, 1.0, 1.0);
-  }
-</script>
+<canvas width=500 height=500 id="c"></canvas>
+
 <script id="vs" type="x-shader/x-vertex">
   attribute vec3 aPos;
   void main(void) {
@@ -13,32 +11,35 @@
   }
 </script>
 
-<canvas width=500 height=500 id="c"></canvas>
+<script id="fs" type="x-shader/x-fragment">
+  void main(void) {
+    gl_FragColor = vec4(1.0, 0.0, 1.0, 1.0);
+  }
+</script>
 
 <script>
-var gl = null;
-$(document).ready(function() {
-  gl = $("#c").gl({
-    init: init,
-     draw: draw
-  });
-});
-
 function init(gl) {
-  gl.x.initDepth(1.0);
+  gl.x.initDepth();
 
   var verts = [
     0.0, 0.0, 0.0,
     1.0, 1.0, 0.0
       ];
 
-  var material = gl.x.createMaterial("vs", "fs");
-  var model = gl.x.createModel(material, gl.LINES, 2);
-  model.addAttribute(verts, "aPos");
+  var material = gl.x.material("vs", "fs");
+  var model = gl.x.model(material, gl.LINES, 2);
+  model.attr(verts, "aPos");
 }
 
 function draw(gl) {
-  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  gl.x.clear();
   gl.x.models().draw();
 }
+
+$(function() {
+  gl = $("#c").gl({
+    init: init,
+     draw: draw
+  });
+});
 </script>
