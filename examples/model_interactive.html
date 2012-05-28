@@ -1,6 +1,14 @@
 <title>jquery-gl example:Model</title>
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
-<script src="../bin/jquery.gl.sylvester.js"></script>
+<script src="../bin/jquery.gl.min.js"></script>
+
+<canvas width=300 height=300 id="c"></canvas>
+<div id="msg" style="float:right"></div>
+<br>
+Model Credit:<br>
+Stanford Bunny courtesy <a href="http://graphics.stanford.edu/data/3Dscanrep/">
+  Stanford 3D Scan Respository</a><br>
+Converted to json using <a href="http://blender.org">blender</a> and <a href="http://code.google.com/p/blender-machete">blender-machete</a>
 
 <script id="fs" type="x-shader/x-fragment">
   varying highp vec3 vN;
@@ -8,6 +16,7 @@
     gl_FragColor = vec4(vN, 1.0);
   }
 </script>
+
 <script id="vs" type="x-shader/x-vertex">
   attribute vec3 aPos;
   attribute vec3 aN;
@@ -22,16 +31,8 @@
   }
 </script>
 
-<canvas width=300 height=300 id="c"></canvas>
-<div id="msg" style="float:right"></div>
-<br>
-Model Credit:<br>
-Stanford Bunny courtesy <a href="http://graphics.stanford.edu/data/3Dscanrep/">
-  Stanford 3D Scan Respository</a><br>
-Converted to json using <a href="http://blender.org">blender</a> and <a href="http://code.google.com/p/blender-machete">blender-machete</a>
-
 <script>
-  $(document).ready(function() {
+  $(function() {
     gl = $("#c").gl({
       init: init,
       draw: draw,
@@ -45,10 +46,9 @@ Converted to json using <a href="http://blender.org">blender</a> and <a href="ht
   });
 
   function init(gl) {
-    gl.x.initDepth(1.0);
+    gl.x.initDepth();
 
-    var material = gl.x.material("vs", "fs");
-    material.p("uP").m("uM").n("uN");
+    var material = gl.x.material("vs", "fs").p("uP").m("uM").n("uN");
 
     gl.x.loadModel(material, 'bunny.json', {verts:"aPos", norms: "aN"},
              function(model) {
@@ -64,7 +64,7 @@ Converted to json using <a href="http://blender.org">blender</a> and <a href="ht
   }
 
   function draw(gl) {
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.x.clear();
     gl.m.perspective(0.1, 100, 500, 500, 45.0);
     gl.m.i();
     gl.x.models().draw();
