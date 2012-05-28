@@ -90,10 +90,11 @@ GLExtension.prototype.sprite = GLExtension.prototype.createSpritelyModel;
  * @param {function} done  Called when the model is loaded.
  */
 GLExtension.prototype.loadModel = function(material, url, attrs, done) {
+  var gl = this._gl;
   $.ajax( url, {
     dataType: "json",
     error: function (jqXHR, textStatus, errorThrown) {
-       alert('Loading model from "' + url + '" failed: ' + textStatus)
+       alert('Loading model from "' + url + '" failed: ' + textStatus);
     },
     success: function(result) {
       if (result.objs) {
@@ -124,7 +125,7 @@ GLExtension.prototype.loadMaterial = function(vsUrl, fsUrl, callback) {
   var fsOk = false;
   $.ajax(vsUrl, {
     dataType: "text",
-    error: function() { 'Loading sahder from ' + vsUrl + 'failed'; },
+    error: function() { alert('Loading sahder from ' + vsUrl + 'failed'); },
     success: function(src) {
       material.loadShaderSource(src, gl.VERTEX_SHADER);
       if (fsOk) {
@@ -137,7 +138,7 @@ GLExtension.prototype.loadMaterial = function(vsUrl, fsUrl, callback) {
 
   $.ajax(fsUrl, {
     dataType: "text",
-    error: function() { 'Loading sahder from ' + fsUrl + 'failed'; },
+    error: function() { alert('Loading sahder from ' + fsUrl + 'failed'); },
     success: function(src) {
       material.loadShaderSource(src, gl.FRAGMENT_SHADER);
       if (vsOk) {

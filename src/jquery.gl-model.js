@@ -26,7 +26,7 @@ function Model(gl, material, type, length) {
   this._type = type;
   this._buffers = [];
   this._gl = gl;
-  this._material = material
+  this._material = material;
   this._enabled = true;
   if (!material) {
     this._material = gl.x.currentMaterial;
@@ -44,20 +44,20 @@ function Model(gl, material, type, length) {
 }
 // Overwritten in the constructor, but defined on the prototype
 // so that Iterator picks them up.
-Model.prototype.update = function(gl) {}
-Model.prototype.draw = function(gl) {}
+Model.prototype.update = function(gl) {};
+Model.prototype.draw = function(gl) {};
 
 /**
  * Binds all buffers we know about.
  */
 Model.prototype._setAttributes = function() {
-  for (i = 0; i < this._buffers.length; ++i) {
+  var gl = this._gl;
+  for (var i = 0; i < this._buffers.length; ++i) {
     var name = this._buffers[i].name;
     var attr = this._buffers[i].attr;
     var buffer = this._buffers[i].buffer;
     var l = this._buffers[i].l;
 
-    var gl = this._gl;
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
     // Run attribute modifiers
     var mods = this._modifiers[name];
@@ -115,13 +115,13 @@ Model.prototype.attr = Model.prototype.addAttribute;
  */
 Model.prototype.addElementArray = function(elements) {
   var gl = this._gl;
-  buffer = gl.createBuffer();
+  var buffer = gl.createBuffer();
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,
       new Uint16Array(elements), gl.STATIC_DRAW);
   this._elementArray = buffer;
   return this;
-}
+};
 
 Model.prototype.elem = Model.prototype.addElementArray;
 
@@ -182,9 +182,9 @@ Model.prototype.toggle = function() {
  */
 Model.prototype.addModifier = function(attrName, modifier) {
   if (this._modifiers[attrName]) {
-    this._modifiers[attrName].push(modifier)
+    this._modifiers[attrName].push(modifier);
   } else {
     this._modifiers[attrName] = [modifier];
   }
-}
+};
 

@@ -4,9 +4,9 @@
 
 function _delegateTo(obj, fname) {
   return function() {
-  obj[fname].apply(obj, arguments);
-  return this;
-  }
+    obj[fname].apply(obj, arguments);
+    return this;
+  };
 }
 
 
@@ -20,7 +20,7 @@ function _delegateTo(obj, fname) {
 function MixInSprite(model, modifier) {
   model.setSequence = _delegateTo(modifier, 'setSequence');
   model.useSequence = _delegateTo(modifier, 'useSequence');
-  model.nextFrame = function() { modifier.nextFrame() };
+  model.nextFrame = function() { modifier.nextFrame(); };
   return model;
 }
 
@@ -109,10 +109,10 @@ SpriteModifier.prototype._uvForFrame = function() {
   var row = Math.floor(this._frame / cols);
   var col = this._frame % rows;
   // v-direction is opposite y-direction
-  v1 = (row * this._fWidth) / this._width;
-  v0 = ((row + 1) * this._fWidth) / this._width;
-  u0 =  (col * this._fHeight) / this._height;
-  u1 =  ((col + 1) * this._fHeight) / this._height;
+  var v1 = (row * this._fWidth) / this._width;
+  var v0 = ((row + 1) * this._fWidth) / this._width;
+  var u0 =  (col * this._fHeight) / this._height;
+  var u1 =  ((col + 1) * this._fHeight) / this._height;
   
   var uv = [u1, v1,
             u0, v1,
@@ -127,7 +127,7 @@ SpriteModifier.prototype._uvForFrame = function() {
  * Called by the model on the buffer this modifier was assigned.
  * Attribute and buffer are bound before calling this function.
  *
- * @param {WebGLBuffer} buffer  The buffer to modify.
+ * @param {WebGLBuffer} buffer  The buffer to modify.  // TODO broken. Verify.
  */
 SpriteModifier.prototype.modifyAttributeBuffer = function(buffer) {
   if (!this._changed) {

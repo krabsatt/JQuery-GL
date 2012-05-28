@@ -7,8 +7,8 @@
 (function($) {
 
   var INFO = {
-    version: '0.901'
-  }
+    version: '0.902'
+  };
 
   // The INJECTION_POINT line is replaced with the jquery.gl-*.js files.
   // It must not be modified.
@@ -23,7 +23,7 @@
     gl.m = new MatrixManager();
     gl.x = new GLExtension(gl);
     gl.util = new GLUtil(gl);
-  }
+  };
 
   /**
    * Create a new gl context in the given canvas element.
@@ -45,7 +45,7 @@
       alert('Failed to create webgl context.');
     }
     return context;
-  }
+  };
 
 
   /**
@@ -97,7 +97,7 @@
         setInterval(function() { gl.x.frame(); }, 1000.0/opts.framerate);
       }
     }
-    gl.x.info = INFO
+    gl.x.info = INFO;
     return gl;
   };
 })(jQuery);

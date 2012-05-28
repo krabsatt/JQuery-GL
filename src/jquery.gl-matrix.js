@@ -27,14 +27,14 @@ MatrixManager.prototype.lookAt = function(eye, focus, up) {
   var f = $V($V(focus).subtract(eye)).toUnitVector();
   var s = f.cross(up);
   var u = s.cross(f);
-  var m=$M(
+  var m = $M(
       [[s.elements[0], s.elements[1], s.elements[2],0],
        [u.elements[0],u.elements[1],u.elements[2],0],
        [-f.elements[0],-f.elements[1],-f.elements[2],0],
        [0, 0, 0, 1]]);
   var t = createTranslation(eye.x(-1));
   this.c = m.x(t);
-}
+};
 
 /**
  * Creates a perspective projection matrix and sets this.p.
@@ -68,11 +68,11 @@ MatrixManager.prototype.perspective = function(
 
 MatrixManager.prototype.push = function() {
   this._stack.push(this.m.dup());
-}
+};
 
 MatrixManager.prototype.pop = function() {
   this.m = this._stack.pop()
-}
+};
 
 /**
  * Multiplies the matrix with current state matrix in transformation order.
@@ -82,7 +82,7 @@ MatrixManager.prototype.pop = function() {
 MatrixManager.prototype.apply = function(m) {
   this.m = m.x(this.m);
   return this.m;
-}
+};
 
 /**
  * Creates an identity matrix.
@@ -92,7 +92,7 @@ MatrixManager.prototype.apply = function(m) {
 MatrixManager.prototype.identity = function() {
   this.m = Matrix.I(4);
   return this.m;
-}
+};
 
 /**
  * Creates an identity matrix.
@@ -101,7 +101,7 @@ MatrixManager.prototype.identity = function() {
  */
 MatrixManager.prototype.i = function() {
   return this.identity();
-}
+};
 
 var createTranslation = function(v) {
   var t = Matrix.I(4);
@@ -113,7 +113,7 @@ var createTranslation = function(v) {
     t.elements[i][3] = v[i];
   }
   return t;
-}
+};
 
 /**
  * Creates and applies a translation matrix.
@@ -125,7 +125,7 @@ MatrixManager.prototype.translate = function(v) {
   var t = createTranslation(v);
   this.apply(t);
   return t;
-}
+};
 
 /**
  * Creates and applies a rotation matrix.
@@ -153,6 +153,6 @@ MatrixManager.prototype.rotate = function(theta, v) {
 
   this.apply(r);
   return r;
-}
+};
 
 

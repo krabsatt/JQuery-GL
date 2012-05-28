@@ -11,7 +11,7 @@
  */
 function Iterator(wrapped, items) {
   this._items = items;
-  for (f in wrapped.prototype) {
+  for (var f in wrapped.prototype) {
     if (typeof(wrapped.prototype[f]) == 'function') {
       // Doing this in a function call to create a clean closure.
       // Creating the function here causes f to change value
@@ -19,7 +19,7 @@ function Iterator(wrapped, items) {
       this.addFunction(f);
     }
   }
-};
+}
 
 /**
  * Allows the wrapper to expose a method on the wrapped type.

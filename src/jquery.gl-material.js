@@ -20,8 +20,8 @@ function Material(gl) {
     M: 1,  // Movement
     C: 2,  // Camera Orientation
     N: 3   // Normals (inverse transpose of M)
-  }
-};
+  };
+}
 
 Material.prototype.p = function(name) {
  return this.addUniform(this.DefaultMatrix.P, name);
@@ -54,18 +54,19 @@ Material.prototype.link = function() {
 
 Material.prototype._srcFromElement = function(e) {
   var src = e.val();
-  if ('' == src) {
+  if ('' === src) {
     src = e.text();
   }
   var id = e.attr('id');
-  if (!src || src == '') {
+  if (!src || src === '') {
     alert('No source for shader with id: ' + id);
     return null;
   }
   return src;
 };
 
-Material.prototype._typeFromElement = function(e) {
+// TODO: This is broken.  Rewrite this logic
+Material.prototype._typeFromElement = function(script) {
   var gl = this._gl;
   var type = script.attr('type');
   if (type == 'x-shader/x-vertex') {
@@ -94,7 +95,6 @@ Material.prototype._createShader = function(src, type) {
  * @param {gl.FRAGMENT_SHADER|gl.VERTEX_SHADER} type  The shader type.
  */
 Material.prototype.loadShader = function(id, type) {
-  var gl = this._gl;
   var e = $('#' + id);
   if (!e || (e.length && (e.length == 0))) {
     alert('Unable to find shader element with id ' + id);
@@ -159,9 +159,9 @@ Material.prototype.addTexture = function(src, name, callback) {
   if (!name) {
     alert('No uniform name supplied for texture: ' + src);
   }
-  gl = this._gl;
-  texture = gl.createTexture();
-  image = new Image();
+  var gl = this._gl;
+  var texture = gl.createTexture();
+  var image = new Image();
   var outerThis = this;
   var onload = function() {
     gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -176,7 +176,7 @@ Material.prototype.addTexture = function(src, name, callback) {
     if (callback) {
       callback();
     }
-  }
+  };
   image.onload = onload;
   image.src = src;
   return this;
@@ -188,21 +188,22 @@ Material.prototype.texture = Material.prototype.addTexture;
  * Sets texture samplers for shaders to use.
  */
 Material.prototype.setTextures = function() {
+  var gl = this._gl;
   var i = 0;
-  for (name in this._textures) {
+  for (var name in this._textures) {
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, this._textures[name]);
     gl.uniform1i(gl.getUniformLocation(this.prog, name), i);
     i++;
   }
-}
+};
 
 /**
  * Sets shader uniform matrices added.
  */
 Material.prototype.setUniforms = function() {
   var gl = this._gl;
-  for (name in this._uniforms) {
+  for (var name in this._uniforms) {
     var matrix = this._uniforms[name];
     if (matrix == this.DefaultMatrix.M) {
       matrix = gl.m.m;
@@ -228,5 +229,5 @@ Material.prototype.setUniforms = function() {
 
     gl.uniformMatrix4fv(uniform, false, new Float32Array(flat));
   }
-}
+};
 
