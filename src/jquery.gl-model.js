@@ -127,6 +127,7 @@ Model.prototype.elem = Model.prototype.addElementArray;
 
 /**
  * Tells this model to use its own orientation matrix for drawing.
+ * TODO Delete.  No longer needed.
  */
 Model.prototype.useOrientation = function() {
   this.orientation = new MatrixManager();
@@ -143,8 +144,7 @@ Model.prototype._draw = function() {
   }
   var gl = this._gl;
   if (this.o) {
-    gl.m.push();
-    gl.m.apply(this.o.m);
+    gl.m.push().apply(this.o.m);
   }
   gl.useProgram(this._material.prog);
   this._setAttributes();

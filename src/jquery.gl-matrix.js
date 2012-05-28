@@ -8,16 +8,16 @@
  */
 function MatrixManager() {  // No touchie gl
   this._stack = [];
-  this.m = Matrix.I(4);
-  this.p = Matrix.I(4);
-  this.c = Matrix.I(4);
+  this.m = Matrix.I(4);  // Model transformation
+  this.p = Matrix.I(4);  // Projection
+  this.c = Matrix.I(4);  // Camera
 }
 
 /**
  * Creates a look-at transformation matrix and sets this.c.
  *
  * To use this, ensure that you are setting a uniform to DefaultMatrix.C
- * TODO: Create an abstract camera object.
+ * TODO: Create an abstract camera object along with scene-based models.
  *
  * @return {Matrix}  The created matrix.
  */
@@ -34,6 +34,7 @@ MatrixManager.prototype.lookAt = function(eye, focus, up) {
        [0, 0, 0, 1]]);
   var t = createTranslation(eye.x(-1));
   this.c = m.x(t);
+  return this;
 };
 
 /**
@@ -63,15 +64,17 @@ MatrixManager.prototype.perspective = function(
        [0, b, 0, 0],
        [0, 0, c, d],
        [0, 0, -1, 0]]);
-  return this.p;
+  return this;
 };
 
 MatrixManager.prototype.push = function() {
   this._stack.push(this.m.dup());
+  return this;
 };
 
 MatrixManager.prototype.pop = function() {
-  this.m = this._stack.pop()
+  this.m = this._stack.pop();
+  return this;
 };
 
 /**
@@ -81,7 +84,7 @@ MatrixManager.prototype.pop = function() {
  */
 MatrixManager.prototype.apply = function(m) {
   this.m = m.x(this.m);
-  return this.m;
+  return this;
 };
 
 /**
@@ -91,7 +94,7 @@ MatrixManager.prototype.apply = function(m) {
  */
 MatrixManager.prototype.identity = function() {
   this.m = Matrix.I(4);
-  return this.m;
+  return this;
 };
 
 /**
@@ -124,7 +127,7 @@ var createTranslation = function(v) {
 MatrixManager.prototype.translate = function(v) {
   var t = createTranslation(v);
   this.apply(t);
-  return t;
+  return this;
 };
 
 /**
@@ -152,7 +155,7 @@ MatrixManager.prototype.rotate = function(theta, v) {
       [0,         0,         0,         1]]);
 
   this.apply(r);
-  return r;
+  return this;
 };
 
 
