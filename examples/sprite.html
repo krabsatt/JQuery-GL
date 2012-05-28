@@ -1,5 +1,5 @@
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
-<script src="../bin/jquery.gl.all.js" id=foo></script>
+<script src="../bin/jquery.gl.min.js" id=foo></script>
 
 <canvas width=300 height=300 id="c"></canvas>
 
@@ -14,7 +14,7 @@
   });
 
 function init(gl) {
-  gl.x.initDepth(1.0);
+  gl.x.initDepth();
   var material = //gl.x.material("vs", "fs")
   gl.x.loadMaterial("texture.vs", "texture.fs", function(material) {
     material.p("uP").m("uM").texture("blo.png", "uTex");
@@ -37,7 +37,7 @@ function init(gl) {
   });
 }
   function draw(gl) {
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.x.clear();
     gl.m.perspective(0.1, 100, 500, 500, 45.0);
     gl.m.i();
     gl.m.translate([1.0, 1.0, -6.0])

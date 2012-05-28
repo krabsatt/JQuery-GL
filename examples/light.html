@@ -154,18 +154,16 @@
   ]; 
 
 
-    var material = gl.x.createMaterial("vs", "fs");
-    material.addUniform(material.DefaultMatrix.P, "uPMatrix");
-    material.addUniform(material.DefaultMatrix.M, "uMVMatrix");
-    var model = gl.x.createModel(material, gl.TRIANGLES, 36);
-    model.addAttribute(verts, "aVertexPosition");
-    model.addAttribute(generatedColors, "aVertexColor", 4);
-    model.addAttribute(norms, "aNormal");
+    var material = gl.x.material("vs", "fs").p("uPMatrix").m("uMVMatrix");
+    var model = gl.x.model(material, gl.TRIANGLES, 36);
+    model.attr(verts, "aVertexPosition");
+    model.attr(generatedColors, "aVertexColor", 4);
+    model.attr(norms, "aNormal");
     model.addElementArray(elems);
   }
 
   function drawScene(gl) {
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.x.clear();
 
     gl.m.perspective(0.1, 100, 500, 500, 45.0);
     gl.m.i();

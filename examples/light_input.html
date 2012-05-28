@@ -182,27 +182,25 @@ void main(void) {
   ]; 
 
 
-    material = gl.x.createMaterial("vs", "fs");
-    material.addUniform(material.DefaultMatrix.P, "uPMatrix");
-    material.addUniform(material.DefaultMatrix.M, "uMVMatrix");
-    material.addUniform(material.DefaultMatrix.N, "uNMatrix");
-    var model = gl.x.createModel(material, gl.TRIANGLES, 36);
-    model.addAttribute(verts, "aVertexPosition");
-    model.addAttribute(generatedColors, "aVertexColor", 4);
-    model.addAttribute(norms, "aNormal");
-    model.addElementArray(elems);
+    var material = gl.x.material("vs", "fs")
+      .p("uPMatrix")
+      .m("uMVMatrix")
+      .n("uNMatrix");
+    var model = gl.x.model(material, gl.TRIANGLES, 36)
+      .attr(verts, "aVertexPosition")
+      .attr(generatedColors, "aVertexColor", 4)
+      .attr(norms, "aNormal")
+      .addElementArray(elems);
   }
 
   function refresh() {
-    material.vs("vs");
-    material.fs("fs");
-    material.link();
+    material.vs("vs").fs("fs").link();
     draw(gl);
   }
 
   var theta = 0;
   function draw(gl) {
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.x.clear();
 
     gl.m.perspective(0.1, 100, 500, 500, 45.0);
     gl.m.i();

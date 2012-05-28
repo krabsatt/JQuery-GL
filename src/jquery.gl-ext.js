@@ -127,7 +127,7 @@ GLExtension.prototype.loadMaterial = function(vsUrl, fsUrl, callback) {
     dataType: "text",
     error: function() { alert('Loading sahder from ' + vsUrl + 'failed'); },
     success: function(src) {
-      material.loadShaderSource(src, gl.VERTEX_SHADER);
+      material.vs(src);
       if (fsOk) {
         material.link();
         callback(material);
@@ -140,7 +140,7 @@ GLExtension.prototype.loadMaterial = function(vsUrl, fsUrl, callback) {
     dataType: "text",
     error: function() { alert('Loading sahder from ' + fsUrl + 'failed'); },
     success: function(src) {
-      material.loadShaderSource(src, gl.FRAGMENT_SHADER);
+      material.fs(src);
       if (vsOk) {
         material.link();
         callback(material);
