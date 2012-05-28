@@ -52,6 +52,9 @@ Material.prototype.link = function() {
   return this;
 };
 
+/**
+ * Extracts source from a script or textbox element.
+ */
 Material.prototype._srcFromElement = function(e) {
   var src = e.val();
   if ('' === src) {
@@ -84,6 +87,7 @@ Material.prototype._typeFromElement = function(script) {
 /**
  * Extracts source from an element if an id is given.
  * 
+ * @return {String}  Source code.
  */
 var _extractSrc = function(idOrSrc) {
   if (idOrSrc.find('{')) {
@@ -108,7 +112,7 @@ var _extractSrc = function(idOrSrc) {
  */
 Material.prototype.vs = function(idOrSrc) {
   var src = _extractSrc(idOrSrc);
-  return this.loadShaderSource(src, this._gl.VERTEX_SHADER);  // this
+  return this._loadShaderSource(src, this._gl.VERTEX_SHADER);  // this
 };
 
 /**
@@ -121,34 +125,16 @@ Material.prototype.vs = function(idOrSrc) {
  */
 Material.prototype.vs = function(idOrSrc) {
   var src = _extractSrc(idOrSrc);
-  return this.loadShaderSource(src, this._gl.FRAGMENT_SHADER);  // this
+  return this._loadShaderSource(src, this._gl.FRAGMENT_SHADER);  // this
 };
 
 /**
- * Loads a shader for the given type from an element with given id.
- *
- * @param {String} id  The id of the element containing source.
- * @param {gl.FRAGMENT_SHADER|gl.VERTEX_SHADER} type  The shader type.
- */
-Material.prototype.loadShader = function(id, type) {
-  var e = $('#' + id);
-  if (!e || (e.length && (e.length === 0))) {
-    alert('Unable to find shader element with id ' + id);
-  }
-  var src = this._srcFromElement(e);
-  if (!type) {
-    type = this._typeFromElement(e);
-  }
-  return this.loadShaderSource(src, type);  // this
-};
-
-/**
- * Loads a shader for the given type from teh source code provided.
+ * Loads a shader for the given type from the source code provided.
  *
  * @param {String} src  Source code for the shader.
  * @param {gl.FRAGMENT_SHADER|gl.VERTEX_SHADER} type  The shader type.
  */
-Material.prototype.loadShaderSource = function(src, type) {
+Material.prototype._loadShaderSource = function(src, type) {
   var gl = this._gl;
   var shader = gl.createShader(type);
   gl.shaderSource(shader, src);
@@ -222,6 +208,8 @@ Material.prototype.texture = Material.prototype.addTexture;
 
 /**
  * Sets texture samplers for shaders to use.
+ * 
+ * Used by jquery-gl during drawing.
  */
 Material.prototype.setTextures = function() {
   var gl = this._gl;
@@ -236,6 +224,8 @@ Material.prototype.setTextures = function() {
 
 /**
  * Sets shader uniform matrices added.
+ * 
+ * Used by jquery-gl during drawing.
  */
 Material.prototype.setUniforms = function() {
   var gl = this._gl;

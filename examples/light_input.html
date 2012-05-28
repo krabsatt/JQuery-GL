@@ -194,8 +194,8 @@ void main(void) {
   }
 
   function refresh() {
-    material.loadShader("vs", gl.VERTEX_SHADER);
-    material.loadShader("fs", gl.FRAGMENT_SHADER);
+    material.vs("vs");
+    material.fs("fs");
     material.link();
     draw(gl);
   }
