@@ -69,28 +69,12 @@ Material.prototype._srcFromElement = function(e) {
 };
 
 /**
- * Try to discover the type of script from the script type attribute.
- */
-Material.prototype._typeFromElement = function(script) {
-  var gl = this._gl;
-  var type = script.attr('type');
-  if (type == 'x-shader/x-vertex') {
-    return gl.VERTEX_SHADER;
-  }  else if (type == 'x-shader/x-fragment') {
-    return gl.FRAGMENT_SHADER;
-  }
-  alert('Shader script must have type attribute set to ' +
-        ' "x-shader/x-fragment" or "x-shader/x-vertex"');
-  return null;
-};
-
-/**
  * Extracts source from an element if an id is given.
  * 
  * @return {String}  Source code.
  */
-var _extractSrc = function(idOrSrc) {
-  if (idOrSrc.find('{')) {
+Material.prototype._extractSrc = function(idOrSrc) {
+  if (idOrSrc.indexOf('{') >= 0) {
     return idOrSrc;
   } else {
     var id = idOrSrc;
@@ -111,7 +95,7 @@ var _extractSrc = function(idOrSrc) {
  *                           actual source to laod.
  */
 Material.prototype.vs = function(idOrSrc) {
-  var src = _extractSrc(idOrSrc);
+  var src = this._extractSrc(idOrSrc);
   return this._loadShaderSource(src, this._gl.VERTEX_SHADER);  // this
 };
 
@@ -123,8 +107,8 @@ Material.prototype.vs = function(idOrSrc) {
  * @param {String}  idOrSrc  Either the id of an element to pull source from or
  *                           actual source to laod.
  */
-Material.prototype.vs = function(idOrSrc) {
-  var src = _extractSrc(idOrSrc);
+Material.prototype.fs = function(idOrSrc) {
+  var src = this._extractSrc(idOrSrc);
   return this._loadShaderSource(src, this._gl.FRAGMENT_SHADER);  // this
 };
 

@@ -17,11 +17,11 @@ function init(gl) {
   gl.x.initDepth(1.0);
   var material = //gl.x.material("vs", "fs")
   gl.x.loadMaterial("texture.vs", "texture.fs", function(material) {
-    material.p("uP").m("uM").texture("frames.png", "uTex");
+    material.p("uP").m("uM").texture("blo.png", "uTex");
     // material must be loaded to use attributes
-    sprite = gl.x.sprite(material, 512,512, 100,100, "aTex", "aPos");
-    sprite.setSequence('loop', 0, 3, true);
-    sprite.useSequence('loop');
+    sprite = gl.x.sprite(material, 512,512, 250,256, "aTex", "aPos");
+//    sprite.setSequence('loop', 0, 3, true);
+//    sprite.useSequence('loop');
     sprite.update(function(gl) {
       if (sprite.state == 'walk')
       sprite.nextFrame();
