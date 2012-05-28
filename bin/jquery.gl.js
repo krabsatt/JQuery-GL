@@ -7,8 +7,8 @@
 (function($) {
 
   var INFO = {
-    version: '0.901'
-  }
+    version: '0.902'
+  };
 
   // The INJECTION_POINT line is replaced with the jquery.gl-*.js files.
   // It must not be modified.
@@ -133,22 +133,23 @@ GLExtension.prototype.sprite = GLExtension.prototype.createSpritelyModel;
  * @param {function} done  Called when the model is loaded.
  */
 GLExtension.prototype.loadModel = function(material, url, attrs, done) {
+  var gl = this._gl;
   $.ajax( url, {
     dataType: "json",
     error: function (jqXHR, textStatus, errorThrown) {
-       alert('Loading model from "' + url + '" failed: ' + textStatus)
+       alert('Loading model from "' + url + '" failed: ' + textStatus);
     },
     success: function(result) {
       if (result.objs) {
         for (var i = 0; i < result.objs.length; ++i) {
           var obj = result.objs[i];
           if (obj.mesh) {
-            var model = modelFromMesh(gl, obj.mesh, attrs);
+            var model = modelFromMesh(gl, material, obj.mesh, attrs);
             done(model);
           }
         }
       } else if (result.v) {
-        var model = modelFromMesh(gl, result, attrs);
+        var model = modelFromMesh(gl, material, result, attrs);
         done(model);
       }
     }
@@ -167,7 +168,7 @@ GLExtension.prototype.loadMaterial = function(vsUrl, fsUrl, callback) {
   var fsOk = false;
   $.ajax(vsUrl, {
     dataType: "text",
-    error: function() { 'Loading sahder from ' + vsUrl + 'failed'; },
+    error: function() { alert('Loading sahder from ' + vsUrl + 'failed'); },
     success: function(src) {
       material.loadShaderSource(src, gl.VERTEX_SHADER);
       if (fsOk) {
@@ -180,7 +181,7 @@ GLExtension.prototype.loadMaterial = function(vsUrl, fsUrl, callback) {
 
   $.ajax(fsUrl, {
     dataType: "text",
-    error: function() { 'Loading sahder from ' + fsUrl + 'failed'; },
+    error: function() { alert('Loading sahder from ' + fsUrl + 'failed'); },
     success: function(src) {
       material.loadShaderSource(src, gl.FRAGMENT_SHADER);
       if (vsOk) {
@@ -194,7 +195,7 @@ GLExtension.prototype.loadMaterial = function(vsUrl, fsUrl, callback) {
   return material;
 };
 
-var modelFromMesh = function(gl, mesh, attrs) {
+var modelFromMesh = function(gl, material, mesh, attrs) {
   var model = gl.x.createModel(material, gl.TRIANGLES, mesh.f.length);
   if (!attrs.verts) {
     alert('Missing required attribute verts in loadModel param.');
@@ -214,6 +215,8 @@ var modelFromMesh = function(gl, mesh, attrs) {
 
 /**
  * Creates a new material from shader script elements.
+ * 
+ * NOTE: The *Id params below now also accept script src directly.
  *
  * @param {String} vsId:  The vertex shader script element id.
  * @param {String} fsId:  The fragment shader script element id.
@@ -223,8 +226,8 @@ GLExtension.prototype.createMaterial = function(vsId, fsId) {
   var gl = this._gl;
   this.currentMaterial = new Material(gl);
   var material = this.currentMaterial;
-  material.loadShader(vsId,  gl.VERTEX_SHADER);
-  material.loadShader(fsId,  gl.FRAGMENT_SHADER);
+  material.vs(vsId);
+  material.fs(fsId);
   material.link();
   return material;
 };
@@ -288,7 +291,7 @@ GLExtension.prototype.models = function(selector) {
  */
 function Iterator(wrapped, items) {
   this._items = items;
-  for (f in wrapped.prototype) {
+  for (var f in wrapped.prototype) {
     if (typeof(wrapped.prototype[f]) == 'function') {
       // Doing this in a function call to create a clean closure.
       // Creating the function here causes f to change value
@@ -296,7 +299,7 @@ function Iterator(wrapped, items) {
       this.addFunction(f);
     }
   }
-};
+}
 
 /**
  * Allows the wrapper to expose a method on the wrapped type.
@@ -348,8 +351,8 @@ function Material(gl) {
     M: 1,  // Movement
     C: 2,  // Camera Orientation
     N: 3   // Normals (inverse transpose of M)
-  }
-};
+  };
+}
 
 Material.prototype.p = function(name) {
  return this.addUniform(this.DefaultMatrix.P, name);
@@ -380,67 +383,73 @@ Material.prototype.link = function() {
   return this;
 };
 
+/**
+ * Extracts source from a script or textbox element.
+ */
 Material.prototype._srcFromElement = function(e) {
   var src = e.val();
-  if ('' == src) {
+  if ('' === src) {
     src = e.text();
   }
   var id = e.attr('id');
-  if (!src || src == '') {
+  if (!src || src === '') {
     alert('No source for shader with id: ' + id);
     return null;
   }
   return src;
 };
 
-Material.prototype._typeFromElement = function(e) {
-  var gl = this._gl;
-  var type = script.attr('type');
-  if (type == 'x-shader/x-vertex') {
-    return compileShader(gl, src, scriptId, gl.VERTEX_SHADER);
-  }  else if (type == 'x-shader/x-fragment') {
-    return compileShader(gl, src, scriptId, gl.FRAGMENT_SHADER);
-  } else {
-    return null;
-  }
-  if (!type) {
-    alert('Shader script must have type attribute set to ' +
-        ' "x-shader/x-fragment" or "x-shader/x-vertex"');
-    return null;
-  }
-  return type;
-};
-
-Material.prototype._createShader = function(src, type) {
-  return this.loadShaderSource(src, type);
-};
-
 /**
- * Loads a shader for the given type from an element with given id.
- *
- * @param {String} id  The id of the element containing source.
- * @param {gl.FRAGMENT_SHADER|gl.VERTEX_SHADER} type  The shader type.
+ * Extracts source from an element if an id is given.
+ * 
+ * @return {String}  Source code.
  */
-Material.prototype.loadShader = function(id, type) {
-  var gl = this._gl;
-  var e = $('#' + id);
-  if (!e || (e.length && (e.length == 0))) {
-    alert('Unable to find shader element with id ' + id);
+Material.prototype._extractSrc = function(idOrSrc) {
+  if (idOrSrc.indexOf('{') >= 0) {
+    return idOrSrc;
+  } else {
+    var id = idOrSrc;
+    var e = $('#' + id);
+    if (!e || (e.length && (e.length === 0))) {
+      alert('Unable to find shader element with id ' + id);
+    }
+    return this._srcFromElement(e);
   }
-  var src = this._srcFromElement(e);
-  if (!type) {
-    type = this._typeFromElement(e);
-  }
-  return this.loadShaderSource(src, type);  // this
 };
 
 /**
- * Loads a shader for the given type from teh source code provided.
+ * Loads a vertex shader.
+ * 
+ * You will need to call link() after loading any shaders.
+ * 
+ * @param {String}  idOrSrc  Either the id of an element to pull source from or
+ *                           actual source to laod.
+ */
+Material.prototype.vs = function(idOrSrc) {
+  var src = this._extractSrc(idOrSrc);
+  return this._loadShaderSource(src, this._gl.VERTEX_SHADER);  // this
+};
+
+/**
+ * Loads a fragment shader.
+ * 
+ * You will need to call link() after loading any shaders.
+ * 
+ * @param {String}  idOrSrc  Either the id of an element to pull source from or
+ *                           actual source to laod.
+ */
+Material.prototype.fs = function(idOrSrc) {
+  var src = this._extractSrc(idOrSrc);
+  return this._loadShaderSource(src, this._gl.FRAGMENT_SHADER);  // this
+};
+
+/**
+ * Loads a shader for the given type from the source code provided.
  *
  * @param {String} src  Source code for the shader.
  * @param {gl.FRAGMENT_SHADER|gl.VERTEX_SHADER} type  The shader type.
  */
-Material.prototype.loadShaderSource = function(src, type) {
+Material.prototype._loadShaderSource = function(src, type) {
   var gl = this._gl;
   var shader = gl.createShader(type);
   gl.shaderSource(shader, src);
@@ -487,9 +496,9 @@ Material.prototype.addTexture = function(src, name, callback) {
   if (!name) {
     alert('No uniform name supplied for texture: ' + src);
   }
-  gl = this._gl;
-  texture = gl.createTexture();
-  image = new Image();
+  var gl = this._gl;
+  var texture = gl.createTexture();
+  var image = new Image();
   var outerThis = this;
   var onload = function() {
     gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -504,7 +513,7 @@ Material.prototype.addTexture = function(src, name, callback) {
     if (callback) {
       callback();
     }
-  }
+  };
   image.onload = onload;
   image.src = src;
   return this;
@@ -514,23 +523,28 @@ Material.prototype.texture = Material.prototype.addTexture;
 
 /**
  * Sets texture samplers for shaders to use.
+ * 
+ * Used by jquery-gl during drawing.
  */
 Material.prototype.setTextures = function() {
+  var gl = this._gl;
   var i = 0;
-  for (name in this._textures) {
+  for (var name in this._textures) {
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, this._textures[name]);
     gl.uniform1i(gl.getUniformLocation(this.prog, name), i);
     i++;
   }
-}
+};
 
 /**
  * Sets shader uniform matrices added.
+ * 
+ * Used by jquery-gl during drawing.
  */
 Material.prototype.setUniforms = function() {
   var gl = this._gl;
-  for (name in this._uniforms) {
+  for (var name in this._uniforms) {
     var matrix = this._uniforms[name];
     if (matrix == this.DefaultMatrix.M) {
       matrix = gl.m.m;
@@ -556,7 +570,7 @@ Material.prototype.setUniforms = function() {
 
     gl.uniformMatrix4fv(uniform, false, new Float32Array(flat));
   }
-}
+};
 
 
 
@@ -589,14 +603,14 @@ MatrixManager.prototype.lookAt = function(eye, focus, up) {
   var f = $V($V(focus).subtract(eye)).toUnitVector();
   var s = f.cross(up);
   var u = s.cross(f);
-  var m=$M(
+  var m = $M(
       [[s.elements[0], s.elements[1], s.elements[2],0],
        [u.elements[0],u.elements[1],u.elements[2],0],
        [-f.elements[0],-f.elements[1],-f.elements[2],0],
        [0, 0, 0, 1]]);
   var t = createTranslation(eye.x(-1));
   this.c = m.x(t);
-}
+};
 
 /**
  * Creates a perspective projection matrix and sets this.p.
@@ -630,11 +644,11 @@ MatrixManager.prototype.perspective = function(
 
 MatrixManager.prototype.push = function() {
   this._stack.push(this.m.dup());
-}
+};
 
 MatrixManager.prototype.pop = function() {
   this.m = this._stack.pop()
-}
+};
 
 /**
  * Multiplies the matrix with current state matrix in transformation order.
@@ -644,7 +658,7 @@ MatrixManager.prototype.pop = function() {
 MatrixManager.prototype.apply = function(m) {
   this.m = m.x(this.m);
   return this.m;
-}
+};
 
 /**
  * Creates an identity matrix.
@@ -654,7 +668,7 @@ MatrixManager.prototype.apply = function(m) {
 MatrixManager.prototype.identity = function() {
   this.m = Matrix.I(4);
   return this.m;
-}
+};
 
 /**
  * Creates an identity matrix.
@@ -663,7 +677,7 @@ MatrixManager.prototype.identity = function() {
  */
 MatrixManager.prototype.i = function() {
   return this.identity();
-}
+};
 
 var createTranslation = function(v) {
   var t = Matrix.I(4);
@@ -675,7 +689,7 @@ var createTranslation = function(v) {
     t.elements[i][3] = v[i];
   }
   return t;
-}
+};
 
 /**
  * Creates and applies a translation matrix.
@@ -687,7 +701,7 @@ MatrixManager.prototype.translate = function(v) {
   var t = createTranslation(v);
   this.apply(t);
   return t;
-}
+};
 
 /**
  * Creates and applies a rotation matrix.
@@ -715,7 +729,7 @@ MatrixManager.prototype.rotate = function(theta, v) {
 
   this.apply(r);
   return r;
-}
+};
 
 
 
@@ -748,7 +762,7 @@ function Model(gl, material, type, length) {
   this._type = type;
   this._buffers = [];
   this._gl = gl;
-  this._material = material
+  this._material = material;
   this._enabled = true;
   if (!material) {
     this._material = gl.x.currentMaterial;
@@ -766,20 +780,20 @@ function Model(gl, material, type, length) {
 }
 // Overwritten in the constructor, but defined on the prototype
 // so that Iterator picks them up.
-Model.prototype.update = function(gl) {}
-Model.prototype.draw = function(gl) {}
+Model.prototype.update = function(gl) {};
+Model.prototype.draw = function(gl) {};
 
 /**
  * Binds all buffers we know about.
  */
 Model.prototype._setAttributes = function() {
-  for (i = 0; i < this._buffers.length; ++i) {
+  var gl = this._gl;
+  for (var i = 0; i < this._buffers.length; ++i) {
     var name = this._buffers[i].name;
     var attr = this._buffers[i].attr;
     var buffer = this._buffers[i].buffer;
     var l = this._buffers[i].l;
 
-    var gl = this._gl;
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
     // Run attribute modifiers
     var mods = this._modifiers[name];
@@ -837,13 +851,13 @@ Model.prototype.attr = Model.prototype.addAttribute;
  */
 Model.prototype.addElementArray = function(elements) {
   var gl = this._gl;
-  buffer = gl.createBuffer();
+  var buffer = gl.createBuffer();
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,
       new Uint16Array(elements), gl.STATIC_DRAW);
   this._elementArray = buffer;
   return this;
-}
+};
 
 Model.prototype.elem = Model.prototype.addElementArray;
 
@@ -904,11 +918,11 @@ Model.prototype.toggle = function() {
  */
 Model.prototype.addModifier = function(attrName, modifier) {
   if (this._modifiers[attrName]) {
-    this._modifiers[attrName].push(modifier)
+    this._modifiers[attrName].push(modifier);
   } else {
     this._modifiers[attrName] = [modifier];
   }
-}
+};
 
 
 
@@ -918,9 +932,9 @@ Model.prototype.addModifier = function(attrName, modifier) {
 
 function _delegateTo(obj, fname) {
   return function() {
-  obj[fname].apply(obj, arguments);
-  return this;
-  }
+    obj[fname].apply(obj, arguments);
+    return this;
+  };
 }
 
 
@@ -934,7 +948,7 @@ function _delegateTo(obj, fname) {
 function MixInSprite(model, modifier) {
   model.setSequence = _delegateTo(modifier, 'setSequence');
   model.useSequence = _delegateTo(modifier, 'useSequence');
-  model.nextFrame = function() { modifier.nextFrame() };
+  model.nextFrame = function() { modifier.nextFrame(); };
   return model;
 }
 
@@ -1023,10 +1037,10 @@ SpriteModifier.prototype._uvForFrame = function() {
   var row = Math.floor(this._frame / cols);
   var col = this._frame % rows;
   // v-direction is opposite y-direction
-  v1 = (row * this._fWidth) / this._width;
-  v0 = ((row + 1) * this._fWidth) / this._width;
-  u0 =  (col * this._fHeight) / this._height;
-  u1 =  ((col + 1) * this._fHeight) / this._height;
+  var v1 = (row * this._fWidth) / this._width;
+  var v0 = ((row + 1) * this._fWidth) / this._width;
+  var u0 =  (col * this._fHeight) / this._height;
+  var u1 =  ((col + 1) * this._fHeight) / this._height;
   
   var uv = [u1, v1,
             u0, v1,
@@ -1041,7 +1055,7 @@ SpriteModifier.prototype._uvForFrame = function() {
  * Called by the model on the buffer this modifier was assigned.
  * Attribute and buffer are bound before calling this function.
  *
- * @param {WebGLBuffer} buffer  The buffer to modify.
+ * @param {WebGLBuffer} buffer  The buffer to modify.  // TODO broken. Verify.
  */
 SpriteModifier.prototype.modifyAttributeBuffer = function(buffer) {
   if (!this._changed) {
@@ -1066,17 +1080,15 @@ function GLUtil(gl) {
  * varying highp vec2 vTex;
  */
 GLUtil.prototype.imageShader = function(fsId) {
-  // TODO(krabsatt): Load src from string directly.
   var vsSrc =
-    '<script id="__vs" type="x-shader/x-vertex">\n' +
     'attribute vec3 aPos;\n' +
     'attribute vec2 aTex;\n' +
     'varying highp vec2 vTex;\n' +
     'void main(void) {\n' +
     '  gl_Position = vec4(aPos, 1.0);\n' +
     '  vTex = aTex;\n' +
-    '}\n</script>';
-  $('body').append(vsSrc);
+    '}\n';
+    
   var verts = [1.0,-1.0, 0.0,
               -1.0,-1.0, 0.0,
                1.0, 1.0, 0.0,
@@ -1087,7 +1099,7 @@ GLUtil.prototype.imageShader = function(fsId) {
             0.0, 0.0];
   var gl = this._gl;
   gl.x.initDepth(1.0);
-  var material = gl.x.createMaterial("__vs", fsId);
+  var material = gl.x.createMaterial(vsSrc, fsId);
   var model = gl.x.createModel(material, gl.TRIANGLE_STRIP, 4);
   model.addAttribute(verts, "aPos");
   model.addAttribute(uv, "aTex", 2);
@@ -1108,7 +1120,7 @@ GLUtil.prototype.imageShader = function(fsId) {
     gl.m = new MatrixManager();
     gl.x = new GLExtension(gl);
     gl.util = new GLUtil(gl);
-  }
+  };
 
   /**
    * Create a new gl context in the given canvas element.
@@ -1130,7 +1142,7 @@ GLUtil.prototype.imageShader = function(fsId) {
       alert('Failed to create webgl context.');
     }
     return context;
-  }
+  };
 
 
   /**
@@ -1182,7 +1194,7 @@ GLUtil.prototype.imageShader = function(fsId) {
         setInterval(function() { gl.x.frame(); }, 1000.0/opts.framerate);
       }
     }
-    gl.x.info = INFO
+    gl.x.info = INFO;
     return gl;
   };
 })(jQuery);
