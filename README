@@ -14,5 +14,5 @@ Notes:
   We use Google closure compiler (http://closure-compiler.appspot.com/home) to
   compile the library.
 
-Documentation:
+Documentation and examples:
   http://sites.google.com/site/jquerygl
