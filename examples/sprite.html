@@ -1,4 +1,4 @@
-<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
+<script src="../bin/jquery.min.js"></script>
 <script src="../bin/jquery.gl.min.js" id=foo></script>
 
 <canvas width=300 height=300 id="c"></canvas>
@@ -7,7 +7,7 @@
   $(document).ready(function() {
     $("#c").gl({
       init: init,
-      framerate: 10,
+      framerate: 12,
       draw: draw,
       update: function(gl) { gl.x.models().update(); }
     });
@@ -15,16 +15,19 @@
 
 function init(gl) {
   gl.x.initDepth();
-  var material = //gl.x.material("vs", "fs")
   gl.x.loadMaterial("texture.vs", "texture.fs", function(material) {
-    material.p("uP").m("uM").texture("blo.png", "uTex");
+    material.p("uP").m("uM").texture("plant_frames.png", "uTex");
     // material must be loaded to use attributes
-    sprite = gl.x.sprite(material, 512,512, 250,256, "aTex", "aPos");
-//    sprite.setSequence('loop', 0, 3, true);
-//    sprite.useSequence('loop');
+    var sprite = gl.x.sprite(material,
+                             2048, 2048, // Texture size
+                             251, 339,   // Frame size
+                             "aTex", "aPos");
+    sprite.setSequence('wake', 0, 31);
+    sprite.useSequence('wake');
     sprite.update(function(gl) {
-      if (sprite.state == 'walk')
-      sprite.nextFrame();
+      if (sprite.state == 'walk') {
+        sprite.nextFrame();
+      }
     });
 
     $('#c').click(function() {

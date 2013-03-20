@@ -37,7 +37,7 @@ function MixInSprite(model, modifier) {
  * @constructor
  */
 function SpriteModifier(gl, width, height, fWidth, fHeight, opts) {
-    this._frame = 0;
+  this._frame = 0;
   this._width = width;
   this._height = height;
   this._fWidth = fWidth;
@@ -107,13 +107,12 @@ SpriteModifier.prototype._uvForFrame = function() {
   var cols =  Math.floor(this._width/this._fWidth);
   var rows =  Math.floor(this._height/this._fHeight);
   var row = Math.floor(this._frame / cols);
-  var col = this._frame % rows;
+  var col = this._frame % cols;
   // v-direction is opposite y-direction
-  var v1 = (row * this._fWidth) / this._width;
-  var v0 = ((row + 1) * this._fWidth) / this._width;
-  var u0 =  (col * this._fHeight) / this._height;
-  var u1 =  ((col + 1) * this._fHeight) / this._height;
-  
+  var u0 = (col * this._fWidth) / this._width;
+  var u1 = ((col + 1) * this._fWidth) / this._width;
+  var v1 =  (row * this._fHeight) / this._height;
+  var v0 =  ((row + 1) * this._fHeight) / this._height;
   var uv = [u1, v1,
             u0, v1,
             u1, v0,

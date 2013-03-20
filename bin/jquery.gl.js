@@ -584,16 +584,16 @@ Material.prototype.setUniforms = function() {
  */
 function MatrixManager() {  // No touchie gl
   this._stack = [];
-  this.m = Matrix.I(4);
-  this.p = Matrix.I(4);
-  this.c = Matrix.I(4);
+  this.m = Matrix.I(4);  // Model transformation
+  this.p = Matrix.I(4);  // Projection
+  this.c = Matrix.I(4);  // Camera
 }
 
 /**
  * Creates a look-at transformation matrix and sets this.c.
  *
  * To use this, ensure that you are setting a uniform to DefaultMatrix.C
- * TODO: Create an abstract camera object.
+ * TODO: Create an abstract camera object along with scene-based models.
  *
  * @return {Matrix}  The created matrix.
  */
@@ -610,6 +610,7 @@ MatrixManager.prototype.lookAt = function(eye, focus, up) {
        [0, 0, 0, 1]]);
   var t = createTranslation(eye.x(-1));
   this.c = m.x(t);
+  return this;
 };
 
 /**
@@ -639,15 +640,17 @@ MatrixManager.prototype.perspective = function(
        [0, b, 0, 0],
        [0, 0, c, d],
        [0, 0, -1, 0]]);
-  return this.p;
+  return this;
 };
 
 MatrixManager.prototype.push = function() {
   this._stack.push(this.m.dup());
+  return this;
 };
 
 MatrixManager.prototype.pop = function() {
-  this.m = this._stack.pop()
+  this.m = this._stack.pop();
+  return this;
 };
 
 /**
@@ -657,7 +660,7 @@ MatrixManager.prototype.pop = function() {
  */
 MatrixManager.prototype.apply = function(m) {
   this.m = m.x(this.m);
-  return this.m;
+  return this;
 };
 
 /**
@@ -667,7 +670,7 @@ MatrixManager.prototype.apply = function(m) {
  */
 MatrixManager.prototype.identity = function() {
   this.m = Matrix.I(4);
-  return this.m;
+  return this;
 };
 
 /**
@@ -700,7 +703,7 @@ var createTranslation = function(v) {
 MatrixManager.prototype.translate = function(v) {
   var t = createTranslation(v);
   this.apply(t);
-  return t;
+  return this;
 };
 
 /**
@@ -728,7 +731,7 @@ MatrixManager.prototype.rotate = function(theta, v) {
       [0,         0,         0,         1]]);
 
   this.apply(r);
-  return r;
+  return this;
 };
 
 
@@ -863,6 +866,7 @@ Model.prototype.elem = Model.prototype.addElementArray;
 
 /**
  * Tells this model to use its own orientation matrix for drawing.
+ * TODO Delete.  No longer needed.
  */
 Model.prototype.useOrientation = function() {
   this.orientation = new MatrixManager();
@@ -879,8 +883,7 @@ Model.prototype._draw = function() {
   }
   var gl = this._gl;
   if (this.o) {
-    gl.m.push();
-    gl.m.apply(this.o.m);
+    gl.m.push().apply(this.o.m);
   }
   gl.useProgram(this._material.prog);
   this._setAttributes();
@@ -965,7 +968,7 @@ function MixInSprite(model, modifier) {
  * @constructor
  */
 function SpriteModifier(gl, width, height, fWidth, fHeight, opts) {
-    this._frame = 0;
+  this._frame = 0;
   this._width = width;
   this._height = height;
   this._fWidth = fWidth;
@@ -1035,13 +1038,13 @@ SpriteModifier.prototype._uvForFrame = function() {
   var cols =  Math.floor(this._width/this._fWidth);
   var rows =  Math.floor(this._height/this._fHeight);
   var row = Math.floor(this._frame / cols);
-  var col = this._frame % rows;
+  var col = this._frame % cols;
   // v-direction is opposite y-direction
-  var v1 = (row * this._fWidth) / this._width;
-  var v0 = ((row + 1) * this._fWidth) / this._width;
-  var u0 =  (col * this._fHeight) / this._height;
-  var u1 =  ((col + 1) * this._fHeight) / this._height;
-  
+  var u0 = (col * this._fWidth) / this._width;
+  var u1 = ((col + 1) * this._fWidth) / this._width;
+  var v1 =  (row * this._fHeight) / this._height;
+  var v0 =  ((row + 1) * this._fHeight) / this._height;
+console.log([this._frame, col, row, u0]);
   var uv = [u1, v1,
             u0, v1,
             u1, v0,
