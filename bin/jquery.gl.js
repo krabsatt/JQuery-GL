@@ -100,10 +100,18 @@ GLExtension.prototype.createSpritelyModel = function(
     material, w, h, fw, fh, tex, pos) {
   var gl = this._gl;
   // TODO Move to an image plane generic
-  var verts = [ 1.0, 1.0, 0.0,
-               -1.0, 1.0, 0.0,
-                1.0,-1.0, 0.0,
-               -1.0,-1.0, 0.0];
+  // Maintain aspect ratio of texture frames.
+  var wscale = 1.0;
+  var hscale = 1.0;
+  if (fw > fh) {
+    hscale = fh / fw;
+  } else if (fh > fw) {
+    wscale = fw / fh;
+  }
+  var verts = [ wscale, hscale, 0.0,
+               -wscale, hscale, 0.0,
+                wscale,-hscale, 0.0,
+               -wscale,-hscale, 0.0];
   var uv = [ 1.0,  1.0,
              0.0,  1.0,
              1.0,  0.0,
@@ -1014,6 +1022,7 @@ SpriteModifier.prototype.nextFrame = function() {
  */
 SpriteModifier.prototype.useSequence = function(name) {
   this._sequence = this._sequences[name];
+  this._frame = this._sequence.start;
   return this;
 };
 
@@ -1044,7 +1053,6 @@ SpriteModifier.prototype._uvForFrame = function() {
   var u1 = ((col + 1) * this._fWidth) / this._width;
   var v1 =  (row * this._fHeight) / this._height;
   var v0 =  ((row + 1) * this._fHeight) / this._height;
-console.log([this._frame, col, row, u0]);
   var uv = [u1, v1,
             u0, v1,
             u1, v0,

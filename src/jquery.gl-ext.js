@@ -57,10 +57,18 @@ GLExtension.prototype.createSpritelyModel = function(
     material, w, h, fw, fh, tex, pos) {
   var gl = this._gl;
   // TODO Move to an image plane generic
-  var verts = [ 1.0, 1.0, 0.0,
-               -1.0, 1.0, 0.0,
-                1.0,-1.0, 0.0,
-               -1.0,-1.0, 0.0];
+  // Maintain aspect ratio of texture frames.
+  var wscale = 1.0;
+  var hscale = 1.0;
+  if (fw > fh) {
+    hscale = fh / fw;
+  } else if (fh > fw) {
+    wscale = fw / fh;
+  }
+  var verts = [ wscale, hscale, 0.0,
+               -wscale, hscale, 0.0,
+                wscale,-hscale, 0.0,
+               -wscale,-hscale, 0.0];
   var uv = [ 1.0,  1.0,
              0.0,  1.0,
              1.0,  0.0,

@@ -3,10 +3,12 @@
 
 <canvas width=300 height=300 id="c"></canvas>
 <br>
-Animation By Mia Carty
+Sprite Animation By Mia Carty
 <br>
 <br>
-Click canvas to play sprite animation.
+<a id="pause" href="javascript:{}">Click to pause</a><br>
+<a id="wake" href="javascript:{}">Click to wake</a><br>
+<a id="blink" href="javascript:{}">Click to blink</a><br>
 
 <script>
   $(document).ready(function() {
@@ -20,6 +22,7 @@ Click canvas to play sprite animation.
 
 function init(gl) {
   gl.x.initDepth();
+  gl.clearColor(1.0, 1.0, 1.0, 1.0);
   gl.x.loadMaterial("texture.vs", "texture.fs", function(material) {
     material.p("uP").m("uM").texture("plant_frames.png", "uTex");
     // material must be loaded to use attributes
@@ -28,19 +31,23 @@ function init(gl) {
                              251, 339,   // Frame size
                              "aTex", "aPos");
     sprite.setSequence('wake', 0, 31);
-    sprite.useSequence('wake');
+    sprite.setSequence('blink', 25, 31);
     sprite.update(function(gl) {
-      if (sprite.state == 'walk') {
+      if (sprite.state == 'wake' || sprite.state == 'blink') {
         sprite.nextFrame();
       }
     });
 
-    $('#c').click(function() {
-      if (sprite.state == 'rest') {
-        sprite.state = 'walk';
-        } else {
-        sprite.state = 'rest';
-      }
+    $('#pause').click(function() {
+      sprite.state = 'pause';
+    });
+    $('#wake').click(function() {
+      sprite.state = 'wake';
+      sprite.useSequence('wake');
+    });
+    $('#blink').click(function() {
+      sprite.state = 'blink';
+      sprite.useSequence('blink')
     });
   });
 }

@@ -83,6 +83,7 @@ SpriteModifier.prototype.nextFrame = function() {
  */
 SpriteModifier.prototype.useSequence = function(name) {
   this._sequence = this._sequences[name];
+  this._frame = this._sequence.start;
   return this;
 };
 
