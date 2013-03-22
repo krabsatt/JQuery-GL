@@ -33,7 +33,9 @@
       init: init,
       draw: draw
     });
-    $('input').change(function(){gl.x.draw();});
+    $('input').change(function() {
+        gl.x.draw();
+    });
   });
 
   function init(gl) {

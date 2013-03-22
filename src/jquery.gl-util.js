@@ -7,7 +7,12 @@ function GLUtil(gl) {
 }
 
 /**
- * varying highp vec2 vTex;
+ * Creates a model and a material for use with a fragment shader.
+ * 
+ * Usage:
+ *   $('#canvas_id').gl().util.imageShader('fragment_shader_id');
+ * 
+ * @param {String}  fsId:  The id of the fragment shader to sue.
  */
 GLUtil.prototype.imageShader = function(fsId) {
   var vsSrc =
@@ -19,20 +24,12 @@ GLUtil.prototype.imageShader = function(fsId) {
     '  vTex = aTex;\n' +
     '}\n';
     
-  var verts = [1.0,-1.0, 0.0,
-              -1.0,-1.0, 0.0,
-               1.0, 1.0, 0.0,
-              -1.0, 1.0, 0.0];
-  var uv = [1.0, 1.0,
-            0.0, 1.0,
-            1.0, 0.0,
-            0.0, 0.0];
   var gl = this._gl;
   gl.x.initDepth(1.0);
   var material = gl.x.createMaterial(vsSrc, fsId);
   var model = gl.x.createModel(material, gl.TRIANGLE_STRIP, 4);
-  model.addAttribute(verts, "aPos");
-  model.addAttribute(uv, "aTex", 2);
+  model.addAttribute(gl.c.vQuad, "aPos");
+  model.addAttribute(gl.c.uvQuad, "aTex", 2);
   gl.x.draw(function(gl) {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.x.models().draw();

@@ -21,6 +21,13 @@ function GLExtension(gl) {
   this.frame = createAddOrCall('_frame', this._gl);
 }
 
+
+// Temporary error handling stub.
+// TODO move to something more permanent.
+GLExtension.prototype.error= function(msg) {
+  console.error(msg);
+}
+
 /**
  * Create a model that uses the given material.
  *
@@ -133,7 +140,9 @@ GLExtension.prototype.loadMaterial = function(vsUrl, fsUrl, callback) {
   var fsOk = false;
   $.ajax(vsUrl, {
     dataType: "text",
-    error: function() { alert('Loading sahder from ' + vsUrl + 'failed'); },
+    error: function() {
+      gl.x.error('Loading sahder from ' + vsUrl + 'failed');
+    },
     success: function(src) {
       material.vs(src);
       if (fsOk) {
@@ -146,7 +155,9 @@ GLExtension.prototype.loadMaterial = function(vsUrl, fsUrl, callback) {
 
   $.ajax(fsUrl, {
     dataType: "text",
-    error: function() { alert('Loading sahder from ' + fsUrl + 'failed'); },
+    error: function() {
+      gl.x.error('Loading sahder from ' + fsUrl + 'failed');
+    },
     success: function(src) {
       material.fs(src);
       if (vsOk) {
@@ -163,13 +174,13 @@ GLExtension.prototype.loadMaterial = function(vsUrl, fsUrl, callback) {
 var modelFromMesh = function(gl, material, mesh, attrs) {
   var model = gl.x.createModel(material, gl.TRIANGLES, mesh.f.length);
   if (!attrs.verts) {
-    alert('Missing required attribute verts in loadModel param.');
+    gl.x.error('Missing required attribute verts in loadModel param.');
   } else {
     model.addAttribute(mesh.v, attrs.verts);
   }
   if (attrs.norms) {
     if (!mesh.n) {
-      alert('Model missing norms param, but required by attrs.');
+      gl.x.error('Model missing norms param, but required by attrs.');
     } else {
       model.addAttribute(mesh.n, attrs.norms);
     }

@@ -9,13 +9,13 @@
  */
 function Model(gl, material, type, length) {
   if (!gl) {
-    alert('Tried to create a model with undefined context.');
+    gl.x.error('Tried to create a model with undefined context.');
   }
   if (!type) {
-    alert('Tried to create a model with undefined geometry type.');
+    gl.x.error('Tried to create a model with undefined geometry type.');
   }
   if (!length) {
-    alert('Tried to create a model with undefined length.');
+    gl.x.error('Tried to create a model with undefined length.');
   }
   // Reserved for user use.
   this.state = null;
@@ -32,7 +32,7 @@ function Model(gl, material, type, length) {
     this._material = gl.x.currentMaterial;
   }
   if (! this._material) {
-    alert('Must create a material before you can create a Model.');
+    gl.x.error('Must create a material before you can create a Model.');
   }
   this._elementArray = null;
 
@@ -91,7 +91,7 @@ Model.prototype.addAttribute = function(array, attributeName, l) {
 
   var attribute = gl.getAttribLocation(this._material.prog, attributeName);
   if (attribute == -1) {
-    alert('Unable to find attribute name ' + attributeName + ' in shaders.');
+    gl.x.error('Unable to find attribute name ' + attributeName + ' in shaders.');
   }
 
   var buffer = gl.createBuffer();

@@ -23,6 +23,7 @@
     gl.m = new MatrixManager();
     gl.x = new GLExtension(gl);
     gl.util = new GLUtil(gl);
+    gl.c = glConst;
   };
 
   /**

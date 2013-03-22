@@ -47,7 +47,7 @@ Material.prototype.link = function() {
   var prog = this.prog;
   gl.linkProgram(prog);
   if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
-    alert('Shader program link failed: ' + gl.getProgramInfoLog(prog));
+    gl.x.error('Shader program link failed: ' + gl.getProgramInfoLog(prog));
   }
   return this;
 };
@@ -56,13 +56,14 @@ Material.prototype.link = function() {
  * Extracts source from a script or textbox element.
  */
 Material.prototype._srcFromElement = function(e) {
+  var gl = this._gl;
   var src = e.val();
   if ('' === src) {
     src = e.text();
   }
   var id = e.attr('id');
   if (!src || src === '') {
-    alert('No source for shader with id: ' + id);
+    gl.x.error('No source for shader with id: ' + id);
     return null;
   }
   return src;
@@ -74,13 +75,14 @@ Material.prototype._srcFromElement = function(e) {
  * @return {String}  Source code.
  */
 Material.prototype._extractSrc = function(idOrSrc) {
+  var gl = this._gl;
   if (idOrSrc.indexOf('{') >= 0) {
     return idOrSrc;
   } else {
     var id = idOrSrc;
     var e = $('#' + id);
     if (!e || (e.length && (e.length === 0))) {
-      alert('Unable to find shader element with id ' + id);
+      gl.x.error('Unable to find shader element with id ' + id);
     }
     return this._srcFromElement(e);
   }
@@ -92,7 +94,7 @@ Material.prototype._extractSrc = function(idOrSrc) {
  * You will need to call link() after loading any shaders.
  * 
  * @param {String}  idOrSrc  Either the id of an element to pull source from or
- *                           actual source to laod.
+ *                           actual source to load.
  */
 Material.prototype.vs = function(idOrSrc) {
   var src = this._extractSrc(idOrSrc);
@@ -124,7 +126,7 @@ Material.prototype._loadShaderSource = function(src, type) {
   gl.shaderSource(shader, src);
   gl.compileShader(shader);
   if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    alert('Shader compilation failed: \n' + src + '\n\n' +
+    gl.x.error('Shader compilation failed: \n' + src + '\n\n' +
           gl.getShaderInfoLog(shader));
     return null;
   }
@@ -163,7 +165,7 @@ Material.prototype.uniform = Material.prototype.addUniform;
  */
 Material.prototype.addTexture = function(src, name, callback) {
   if (!name) {
-    alert('No uniform name supplied for texture: ' + src);
+    gl.x.error('No uniform name supplied for texture: ' + src);
   }
   var gl = this._gl;
   var texture = gl.createTexture();
@@ -226,7 +228,7 @@ Material.prototype.setUniforms = function() {
     }
     var uniform = gl.getUniformLocation(this.prog, name);
     if (!uniform) {
-      alert('Unable to find uniform name ' + name + ' in shaders.');
+      gl.x.error('Unable to find uniform name ' + name + ' in shaders.');
     }
 
     var flat = [];
@@ -236,7 +238,6 @@ Material.prototype.setUniforms = function() {
         flat.push(matrix.elements[j][i]);
       }
     }
-
     gl.uniformMatrix4fv(uniform, false, new Float32Array(flat));
   }
 };

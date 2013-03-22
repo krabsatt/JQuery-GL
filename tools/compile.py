@@ -11,6 +11,7 @@ import urllib
 
 files = [
   "jquery.gl-common.js",
+  "jquery.gl-const.js",
   "jquery.gl-ext.js",
   "jquery.gl-iter.js",
   "jquery.gl-material.js",

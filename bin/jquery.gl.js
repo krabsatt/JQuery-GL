@@ -40,6 +40,59 @@ function createAddOrCall(f, defaultGl) {
   };
 }
 
+// Copyright (c) 2013 Kevin Rabsatt
+//
+// The .const object we add to the WebGLRenderContext.
+// Contains constant data objects used often.
+
+var glConst = {};
+
+glConst.vsPMN =
+  'attribute vec3 aPos;\n' +
+  'attribute vec3 aN;\n' +
+  'uniform mat4 uM;\n' +
+  'uniform mat4 uP;\n' +
+  'uniform mat4 uN;\n' +
+  'varying highp vec3 vN;\n' +
+  'void main(void) {\n' +
+  '  gl_Position = uP * uM * vec4(aPos, 1.0);\n' +
+  '  vN = (uN * vec4(aN, 1.0)).xyz;\n' +
+  '}\n';
+  
+/**
+ * Default uniform names for P, N and M matrices.
+ */
+glConst.uPMN = {
+    p: 'uP',
+    m: 'uM',
+    n: 'uN'
+};
+
+/**
+ * Default uniform names for P, N M and C matrices.
+ */
+glConst.uPMNC = {
+    p: 'uP',
+    m: 'uM',
+    n: 'uN',
+    c: 'uC'
+};
+
+/**
+ * Default vertex set for a 2-unit quad.
+ */
+glConst.vQuad = [ 1.0, 1.0, 0.0,
+                 -1.0, 1.0, 0.0,
+                  1.0,-1.0, 0.0,
+                 -1.0,-1.0, 0.0];
+
+/**
+ * Default uv set for above 2-unit quad.
+ */
+glConst.uvQuad = [1.0, 1.0,
+                  0.0, 1.0,
+                  1.0, 0.0,
+                  0.0, 0.0];
 
 // Copyright (c) 2011 Kevin Rabsatt
 //
@@ -62,6 +115,13 @@ function GLExtension(gl) {
     this._update(this._gl);
   };
   this.frame = createAddOrCall('_frame', this._gl);
+}
+
+
+// Temporary error handling stub.
+// TODO move to something more permanent.
+GLExtension.prototype.error= function(msg) {
+  console.error(msg);
 }
 
 /**
@@ -176,7 +236,9 @@ GLExtension.prototype.loadMaterial = function(vsUrl, fsUrl, callback) {
   var fsOk = false;
   $.ajax(vsUrl, {
     dataType: "text",
-    error: function() { alert('Loading sahder from ' + vsUrl + 'failed'); },
+    error: function() {
+      gl.x.error('Loading sahder from ' + vsUrl + 'failed');
+    },
     success: function(src) {
       material.vs(src);
       if (fsOk) {
@@ -189,7 +251,9 @@ GLExtension.prototype.loadMaterial = function(vsUrl, fsUrl, callback) {
 
   $.ajax(fsUrl, {
     dataType: "text",
-    error: function() { alert('Loading sahder from ' + fsUrl + 'failed'); },
+    error: function() {
+      gl.x.error('Loading sahder from ' + fsUrl + 'failed');
+    },
     success: function(src) {
       material.fs(src);
       if (vsOk) {
@@ -206,13 +270,13 @@ GLExtension.prototype.loadMaterial = function(vsUrl, fsUrl, callback) {
 var modelFromMesh = function(gl, material, mesh, attrs) {
   var model = gl.x.createModel(material, gl.TRIANGLES, mesh.f.length);
   if (!attrs.verts) {
-    alert('Missing required attribute verts in loadModel param.');
+    gl.x.error('Missing required attribute verts in loadModel param.');
   } else {
     model.addAttribute(mesh.v, attrs.verts);
   }
   if (attrs.norms) {
     if (!mesh.n) {
-      alert('Model missing norms param, but required by attrs.');
+      gl.x.error('Model missing norms param, but required by attrs.');
     } else {
       model.addAttribute(mesh.n, attrs.norms);
     }
@@ -401,7 +465,7 @@ Material.prototype.link = function() {
   var prog = this.prog;
   gl.linkProgram(prog);
   if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
-    alert('Shader program link failed: ' + gl.getProgramInfoLog(prog));
+    gl.x.error('Shader program link failed: ' + gl.getProgramInfoLog(prog));
   }
   return this;
 };
@@ -410,13 +474,14 @@ Material.prototype.link = function() {
  * Extracts source from a script or textbox element.
  */
 Material.prototype._srcFromElement = function(e) {
+  var gl = this._gl;
   var src = e.val();
   if ('' === src) {
     src = e.text();
   }
   var id = e.attr('id');
   if (!src || src === '') {
-    alert('No source for shader with id: ' + id);
+    gl.x.error('No source for shader with id: ' + id);
     return null;
   }
   return src;
@@ -428,13 +493,14 @@ Material.prototype._srcFromElement = function(e) {
  * @return {String}  Source code.
  */
 Material.prototype._extractSrc = function(idOrSrc) {
+  var gl = this._gl;
   if (idOrSrc.indexOf('{') >= 0) {
     return idOrSrc;
   } else {
     var id = idOrSrc;
     var e = $('#' + id);
     if (!e || (e.length && (e.length === 0))) {
-      alert('Unable to find shader element with id ' + id);
+      gl.x.error('Unable to find shader element with id ' + id);
     }
     return this._srcFromElement(e);
   }
@@ -446,7 +512,7 @@ Material.prototype._extractSrc = function(idOrSrc) {
  * You will need to call link() after loading any shaders.
  * 
  * @param {String}  idOrSrc  Either the id of an element to pull source from or
- *                           actual source to laod.
+ *                           actual source to load.
  */
 Material.prototype.vs = function(idOrSrc) {
   var src = this._extractSrc(idOrSrc);
@@ -478,7 +544,7 @@ Material.prototype._loadShaderSource = function(src, type) {
   gl.shaderSource(shader, src);
   gl.compileShader(shader);
   if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    alert('Shader compilation failed: \n' + src + '\n\n' +
+    gl.x.error('Shader compilation failed: \n' + src + '\n\n' +
           gl.getShaderInfoLog(shader));
     return null;
   }
@@ -517,7 +583,7 @@ Material.prototype.uniform = Material.prototype.addUniform;
  */
 Material.prototype.addTexture = function(src, name, callback) {
   if (!name) {
-    alert('No uniform name supplied for texture: ' + src);
+    gl.x.error('No uniform name supplied for texture: ' + src);
   }
   var gl = this._gl;
   var texture = gl.createTexture();
@@ -580,7 +646,7 @@ Material.prototype.setUniforms = function() {
     }
     var uniform = gl.getUniformLocation(this.prog, name);
     if (!uniform) {
-      alert('Unable to find uniform name ' + name + ' in shaders.');
+      gl.x.error('Unable to find uniform name ' + name + ' in shaders.');
     }
 
     var flat = [];
@@ -590,7 +656,6 @@ Material.prototype.setUniforms = function() {
         flat.push(matrix.elements[j][i]);
       }
     }
-
     gl.uniformMatrix4fv(uniform, false, new Float32Array(flat));
   }
 };
@@ -771,13 +836,13 @@ MatrixManager.prototype.rotate = function(theta, v) {
  */
 function Model(gl, material, type, length) {
   if (!gl) {
-    alert('Tried to create a model with undefined context.');
+    gl.x.error('Tried to create a model with undefined context.');
   }
   if (!type) {
-    alert('Tried to create a model with undefined geometry type.');
+    gl.x.error('Tried to create a model with undefined geometry type.');
   }
   if (!length) {
-    alert('Tried to create a model with undefined length.');
+    gl.x.error('Tried to create a model with undefined length.');
   }
   // Reserved for user use.
   this.state = null;
@@ -794,7 +859,7 @@ function Model(gl, material, type, length) {
     this._material = gl.x.currentMaterial;
   }
   if (! this._material) {
-    alert('Must create a material before you can create a Model.');
+    gl.x.error('Must create a material before you can create a Model.');
   }
   this._elementArray = null;
 
@@ -853,7 +918,7 @@ Model.prototype.addAttribute = function(array, attributeName, l) {
 
   var attribute = gl.getAttribLocation(this._material.prog, attributeName);
   if (attribute == -1) {
-    alert('Unable to find attribute name ' + attributeName + ' in shaders.');
+    gl.x.error('Unable to find attribute name ' + attributeName + ' in shaders.');
   }
 
   var buffer = gl.createBuffer();
@@ -1103,7 +1168,12 @@ function GLUtil(gl) {
 }
 
 /**
- * varying highp vec2 vTex;
+ * Creates a model and a material for use with a fragment shader.
+ * 
+ * Usage:
+ *   $('#canvas_id').gl().util.imageShader('fragment_shader_id');
+ * 
+ * @param {String}  fsId:  The id of the fragment shader to sue.
  */
 GLUtil.prototype.imageShader = function(fsId) {
   var vsSrc =
@@ -1115,20 +1185,12 @@ GLUtil.prototype.imageShader = function(fsId) {
     '  vTex = aTex;\n' +
     '}\n';
     
-  var verts = [1.0,-1.0, 0.0,
-              -1.0,-1.0, 0.0,
-               1.0, 1.0, 0.0,
-              -1.0, 1.0, 0.0];
-  var uv = [1.0, 1.0,
-            0.0, 1.0,
-            1.0, 0.0,
-            0.0, 0.0];
   var gl = this._gl;
   gl.x.initDepth(1.0);
   var material = gl.x.createMaterial(vsSrc, fsId);
   var model = gl.x.createModel(material, gl.TRIANGLE_STRIP, 4);
-  model.addAttribute(verts, "aPos");
-  model.addAttribute(uv, "aTex", 2);
+  model.addAttribute(gl.c.vQuad, "aPos");
+  model.addAttribute(gl.c.uvQuad, "aTex", 2);
   gl.x.draw(function(gl) {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.x.models().draw();
@@ -1146,6 +1208,7 @@ GLUtil.prototype.imageShader = function(fsId) {
     gl.m = new MatrixManager();
     gl.x = new GLExtension(gl);
     gl.util = new GLUtil(gl);
+    gl.c = glConst;
   };
 
   /**

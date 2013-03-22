@@ -1,5 +1,5 @@
 <title>jquery-gl example:Model</title>
-<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
+<script src="../bin/jquery.min.js"></script>
 <script src="../bin/jquery.gl.min.js"></script>
 
 <canvas width=300 height=300 id="c"></canvas>
@@ -14,20 +14,6 @@ Converted to json using <a href="http://blender.org">blender</a> and <a href="ht
   varying highp vec3 vN;
   void main(void) {
     gl_FragColor = vec4(vN, 1.0);
-  }
-</script>
-
-<script id="vs" type="x-shader/x-vertex">
-  attribute vec3 aPos;
-  attribute vec3 aN;
-  uniform mat4 uM;
-  uniform mat4 uP;
-  uniform mat4 uN;
-
-  varying highp vec3 vN;
-  void main(void) {
-    gl_Position = uP * uM * vec4(aPos, 1.0);
-    vN = (uN * vec4(aN, 1.0)).xyz;
   }
 </script>
 
@@ -48,7 +34,7 @@ Converted to json using <a href="http://blender.org">blender</a> and <a href="ht
   function init(gl) {
     gl.x.initDepth();
 
-    var material = gl.x.material("vs", "fs").p("uP").m("uM").n("uN");
+    var material = gl.x.material(gl.c.vsPMN, "fs", gl.c.uPMN);
 
     gl.x.loadModel(material, 'bunny.json', {verts:"aPos", norms: "aN"},
              function(model) {
