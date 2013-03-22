@@ -1,5 +1,5 @@
 <title>jquery-gl example:Model</title>
-<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
+<script src="../bin/jquery.min.js"></script>
 <script src="../bin/jquery.gl.min.js"></script>
 
 <canvas width=500 height=500 id="c"></canvas>
@@ -53,6 +53,6 @@ Converted to json using <a href="http://blender.org">blender</a> and <a href="ht
   }
 
   $(function() {
-    gl = $("#c").gl({init: init});
+    $("#c").gl({init: init});
   });
 </script>
