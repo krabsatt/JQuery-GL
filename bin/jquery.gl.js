@@ -228,15 +228,30 @@ var modelFromMesh = function(gl, material, mesh, attrs) {
  *
  * @param {String} vsId:  The vertex shader script element id.
  * @param {String} fsId:  The fragment shader script element id.
+ * @param {Object?} opts:  Optional matrix setup parameters:
+ *                         p:  The name of the projection matrix in your shader.
+ *                         m:  The name of the transformation matrix.
+ *                         n:  The name of the normal transformation matrix.
  * @return {Material}  A new material object.
  */
-GLExtension.prototype.createMaterial = function(vsId, fsId) {
+GLExtension.prototype.createMaterial = function(vsId, fsId, opts) {
   var gl = this._gl;
   this.currentMaterial = new Material(gl);
   var material = this.currentMaterial;
   material.vs(vsId);
   material.fs(fsId);
   material.link();
+  if (opts) {
+    if (opts.p) {
+      material.p(opts.p);
+    }
+    if (opts.m) {
+      material.m(opts.m);
+    }
+    if (opts.n) {
+      material.n(opts.n);
+    }
+  }
   return material;
 };
 
