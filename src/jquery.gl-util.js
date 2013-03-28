@@ -36,3 +36,26 @@ GLUtil.prototype.imageShader = function(fsId) {
   });
   return material;
 };
+
+/**
+ * Incomplete Image Convolution helper.
+ */
+GLUtil.prototype.imageFilterConvolution = function(image, filter) {
+  var fsSrc =
+    'varying highp vec2 vTex;' +
+    'uniform sampler2D uTex;' +
+    'void main(void) {' +
+    // TODO ADD filter loops here
+    '  gl_FragColor += texture2D(uTex, vec2(vTex.s, vTex.t));' +
+    '}';
+  
+  var gl = this._gl;
+  var material = this.imageShader(fsSrc).texture(image, "uTex", function() {
+    gl.x.draw();
+  });
+  gl.x.draw(function(gl) {
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.x.models().draw();
+  });
+  return material;
+}
